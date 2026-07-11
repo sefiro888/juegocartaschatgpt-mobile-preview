@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Lava cave backdrop -->
+  <rect width="400" height="400" fill="#0f0505" />
+  
+  <!-- Lava streams on side -->
+  <path d="M 0,100 Q 80,200 40,400 L 0,400 Z" fill="#b32d00" />
+  <path d="M 400,150 Q 340,250 380,400 L 400,400 Z" fill="#e63c00" opacity="0.8" />
+
+  <!-- Obsidian rocks framing central passage -->
+  <polygon points="0,400 80,250 150,400" fill="#080303" />
+  <polygon points="400,400 320,250 250,400" fill="#080303" />
+
+  <!-- Rogue silhouette in center -->
+  <g transform="translate(130, 100)">
+    <!-- Hooded Head -->
+    <path d="M 40,80 C 40,40 100,40 100,80 L 85,95 L 55,95 Z" fill="#140b0a" stroke="#ff3e3e" stroke-width="2" />
+    <polygon points="55,90 85,90 70,105" fill="#050303" />
+    <circle cx="62" cy="85" r="3" fill="#ffea00" />
+    <circle cx="78" cy="85" r="3" fill="#ffea00" />
+
+    <!-- Cloak / Body -->
+    <path d="M 30,110 Q 70,100 110,110 L 130,220 Q 70,200 10,220 Z" fill="#0d0707" stroke="#ff3e3e" stroke-width="1.5" />
+    
+    <!-- Burning Dagger -->
+    <polygon points="20,160 0,190 15,165" fill="#ffea00" stroke="#ff3e3e" stroke-width="1" />
+  </g>
+</svg>

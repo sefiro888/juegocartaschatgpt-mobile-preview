@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Frozen background -->
+  <rect width="400" height="400" fill="#040b15" />
+  <circle cx="200" cy="200" r="160" fill="url(#ice-gr)" opacity="0.35" />
+
+  <!-- Ice spiky wall in center -->
+  <g transform="translate(100, 100)">
+    <!-- Spikes -->
+    <polygon points="10,200 -20,100 40,150" fill="#006680" stroke="#00e5ff" stroke-width="2" />
+    <polygon points="-20,100 10,200 10,120" fill="#00b3db" />
+
+    <polygon points="190,200 220,100 160,150" fill="#006680" stroke="#00e5ff" stroke-width="2" />
+    <polygon points="220,100 190,200 190,120" fill="#00b3db" />
+
+    <polygon points="100,200 100,40 50,150" fill="#004d61" stroke="#00e5ff" stroke-width="2" />
+    <polygon points="100,40 100,200 150,150" fill="#0099bf" stroke="#00e5ff" stroke-width="2" />
+  </g>
+
+  <!-- Snow ground details -->
+  <polygon points="0,320 200,300 400,320 400,400 0,400" fill="#f1f5f9" opacity="0.8" />
+
+  <defs>
+    <radialGradient id="ice-gr" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e5ff" />
+      <stop offset="100%" stop-color="#040b15" />
+    </radialGradient>
+  </defs>
+</svg>

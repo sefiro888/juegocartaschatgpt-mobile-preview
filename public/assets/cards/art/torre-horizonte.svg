@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Starry night sky background -->
+  <rect width="400" height="400" fill="#060913" />
+  <circle cx="200" cy="120" r="160" fill="url(#tower-sky-glow)" opacity="0.35" />
+
+  <!-- Background mountains -->
+  <polygon points="0,340 100,240 220,340" fill="#03050a" />
+  <polygon points="180,340 300,210 400,340" fill="#03050a" opacity="0.8" />
+
+  <!-- Horizon ground -->
+  <rect x="0" y="320" width="400" height="80" fill="#0a0f1d" />
+
+  <!-- The Academy Tower Spire -->
+  <g transform="translate(160, 40)">
+    <!-- Base -->
+    <polygon points="10,280 0,300 80,300 70,280" fill="#20293a" stroke="#00d9ff" stroke-width="1.5" />
+    
+    <!-- Main pillars -->
+    <rect x="20" y="100" width="40" height="180" fill="#151b26" stroke="#00d9ff" stroke-width="2" />
+    <rect x="30" y="120" width="20" height="160" fill="#0d1118" />
+    
+    <!-- Top balcony and Spire peak -->
+    <polygon points="15,100 5,105 75,105 65,100" fill="#20293a" />
+    <polygon points="25,100 40,0 55,100" fill="#151b26" stroke="#00d9ff" stroke-width="2" />
+    <circle cx="40" cy="0" r="6" fill="#ffffff" filter="blur(1px)" />
+
+    <!-- Spire glowing window -->
+    <rect x="36" y="140" width="8" height="24" rx="4" fill="#00d9ff" filter="blur(1px)" />
+    <rect x="36" y="180" width="8" height="24" rx="4" fill="#00d9ff" filter="blur(1px)" />
+    
+    <!-- Magical spinning rings (ovals intersecting the tower) -->
+    <ellipse cx="40" cy="80" rx="60" ry="12" fill="none" stroke="#00e5ff" stroke-width="3" transform="rotate(-15, 40, 80)" filter="blur(1px)" opacity="0.95" />
+    <ellipse cx="40" cy="80" rx="60" ry="12" fill="none" stroke="#ffffff" stroke-width="1" transform="rotate(-15, 40, 80)" opacity="0.9" />
+    
+    <ellipse cx="40" cy="160" rx="50" ry="10" fill="none" stroke="#00e5ff" stroke-width="2" transform="rotate(10, 40, 160)" filter="blur(0.5px)" opacity="0.8" />
+  </g>
+
+  <!-- Stars -->
+  <circle cx="60" cy="70" r="1" fill="#fff" />
+  <circle cx="120" cy="40" r="1.5" fill="#00d9ff" opacity="0.5" />
+  <circle cx="320" cy="90" r="1.2" fill="#fff" />
+
+  <defs>
+    <radialGradient id="tower-sky-glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="70%" stop-color="#0c0e29" />
+      <stop offset="100%" stop-color="#060913" />
+    </radialGradient>
+  </defs>
+</svg>

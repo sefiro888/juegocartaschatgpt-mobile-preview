@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Obsidian dark cave background -->
+  <rect width="400" height="400" fill="#120c0c" />
+  <circle cx="200" cy="200" r="160" fill="url(#fire-radial)" opacity="0.4" />
+
+  <!-- Volcanic rocks in background -->
+  <path d="M 0,400 L 100,280 L 160,320 L 220,250 L 300,340 L 400,290 L 400,400 Z" fill="#090505" />
+
+  <!-- Fire glow behind the hound -->
+  <circle cx="200" cy="220" r="70" fill="#ff4800" filter="blur(25px)" opacity="0.6" />
+
+  <!-- Flame particles rising -->
+  <path d="M 120,320 C 130,280 140,290 145,260 C 150,290 155,270 160,310 Z" fill="#ff3300" opacity="0.8" />
+  <path d="M 230,300 C 240,250 250,260 255,230 C 260,260 265,240 270,295 Z" fill="#ffaa00" opacity="0.9" />
+
+  <!-- Hound silhouette (glowing lava dog) -->
+  <!-- Head and jaws -->
+  <path d="M 160,160 L 240,140 L 250,170 Q 230,190 200,195 L 180,210 L 155,185 Z" fill="#260f0d" stroke="#ff4d00" stroke-width="3" />
+  <!-- Glowing Eye -->
+  <polygon points="210,158 225,153 218,163" fill="#ffea00" />
+  <circle cx="218" cy="158" r="4" fill="#ffffff" filter="blur(1px)" />
+
+  <!-- Spikes and fiery collar -->
+  <polygon points="170,145 160,120 180,140" fill="#ff3c00" />
+  <polygon points="190,140 185,110 200,135" fill="#ff3c00" />
+  <polygon points="150,170 130,155 155,180" fill="#ff3c00" />
+
+  <!-- Body silhouette -->
+  <path d="M 160,180 Q 110,210 90,280 Q 120,290 140,320 L 175,270 Q 185,210 160,180 Z" fill="#1b0807" stroke="#ff4d00" stroke-width="2" />
+  
+  <!-- Lava veins inside body -->
+  <path d="M 120,225 C 115,240 120,250 110,265" stroke="#ff7700" stroke-width="4" stroke-linecap="round" fill="none" />
+  <path d="M 135,235 C 130,255 135,265 125,280" stroke="#ffaa00" stroke-width="3" stroke-linecap="round" fill="none" />
+
+  <defs>
+    <radialGradient id="fire-radial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff3c00" />
+      <stop offset="70%" stop-color="#5a150c" />
+      <stop offset="100%" stop-color="#120c0c" />
+    </radialGradient>
+  </defs>
+</svg>

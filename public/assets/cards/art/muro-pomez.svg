@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Sky background -->
+  <rect width="400" height="400" fill="#20110d" />
+  <rect width="400" height="400" fill="url(#sky-gr)" opacity="0.4" />
+
+  <!-- Wall structure -->
+  <g transform="translate(60, 100)">
+    <!-- Base stone layers -->
+    <rect x="0" y="160" width="280" height="80" fill="#2d221e" stroke="#ff3e3e" stroke-width="2" />
+    <rect x="20" y="80" width="240" height="80" fill="#3d2f2a" stroke="#ff3e3e" stroke-width="2" />
+    <rect x="50" y="0" width="180" height="80" fill="#4d3c36" stroke="#ff3e3e" stroke-width="2" />
+
+    <!-- Pumice porous spots (small dark circles) -->
+    <circle cx="40" cy="200" r="5" fill="#150f0d" />
+    <circle cx="100" cy="180" r="8" fill="#150f0d" />
+    <circle cx="150" cy="210" r="4" fill="#150f0d" />
+    <circle cx="220" cy="190" r="6" fill="#150f0d" />
+
+    <circle cx="60" cy="120" r="7" fill="#150f0d" />
+    <circle cx="120" cy="100" r="5" fill="#150f0d" />
+    <circle cx="180" cy="130" r="9" fill="#150f0d" />
+    <circle cx="210" cy="110" r="4" fill="#150f0d" />
+
+    <circle cx="90" cy="40" r="6" fill="#150f0d" />
+    <circle cx="150" cy="30" r="7" fill="#150f0d" />
+  </g>
+
+  <!-- Magma cracks at the base of the wall -->
+  <path d="M 60,340 Q 200,320 340,340" stroke="#ff5500" stroke-width="4" fill="none" />
+
+  <defs>
+    <linearGradient id="sky-gr" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cc3c00" />
+      <stop offset="100%" stop-color="#20110d" />
+    </linearGradient>
+  </defs>
+</svg>

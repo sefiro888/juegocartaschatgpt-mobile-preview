@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap');
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+
+  /* Colors */
+  --bg-dark: #07080b;
+  --bg-panel: rgba(13, 17, 24, 0.75);
+  --bg-panel-border: rgba(255, 255, 255, 0.08);
+  
+  --color-text-main: #f3f4f6;
+  --color-text-muted: #9ca3af;
+  
+  /* Faction Colors */
+  --color-furia: #ff3e3e;
+  --color-furia-glow: rgba(255, 62, 62, 0.4);
+  --color-furia-bg: rgba(40, 10, 10, 0.8);
+  
+  --color-arcano: #00d9ff;
+  --color-arcano-glow: rgba(0, 217, 255, 0.4);
+  --color-arcano-bg: rgba(10, 30, 45, 0.8);
+
+  /* Rareties */
+  --rarity-comun: #9ca3af;
+  --rarity-rara: #3b82f6;
+  --rarity-epica: #a855f7;
+  --rarity-legendaria: #fbbf24;
+
+  /* UI indicators */
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Glass Effect */
+  --glass-bg: rgba(10, 14, 22, 0.65);
+  --glass-bg-heavy: rgba(8, 11, 18, 0.82);
+  --glass-blur: 16px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Glassmorphism Panel helper — enhanced with stronger frost */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════
+   GLOBAL ANIMATION KEYFRAMES — Premium Visual FX
+   ═══════════════════════════════════════════════════ */
+
+/* Faction glow pulses */
+@keyframes pulse-glow-furia {
+  0%, 100% { box-shadow: 0 0 5px var(--color-furia-glow); }
+  50% { box-shadow: 0 0 15px var(--color-furia); }
+}
+
+@keyframes pulse-glow-arcano {
+  0%, 100% { box-shadow: 0 0 5px var(--color-arcano-glow); }
+  50% { box-shadow: 0 0 15px var(--color-arcano); }
+}
+
+.glow-furia {
+  animation: pulse-glow-furia 2s infinite;
+}
+
+.glow-arcano {
+  animation: pulse-glow-arcano 2s infinite;
+}
+
+/* Holographic shimmer for LEGENDARIA cards */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Floating particles */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-100vh) translateX(20px);
+  }
+  100% {
+    transform: translateY(-100vh) translateX(-10px);
+    opacity: 0;
+  }
+}
+
+/* Generic glow pulse */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
+    opacity: 0.9;
+  }
+  50% {
+    box-shadow: 0 0 10px currentColor, 0 0 25px currentColor;
+    opacity: 1;
+  }
+}
+
+/* Slide up entrance */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Cinematic entrance for overlays */
+@keyframes cinematic-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(20px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Pulsing indicator dot */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
+
+/* Title glow animation */
+@keyframes title-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 20px rgba(99, 102, 241, 0.3),
+      0 0 40px rgba(99, 102, 241, 0.15);
+  }
+  50% {
+    text-shadow:
+      0 0 30px rgba(99, 102, 241, 0.6),
+      0 0 60px rgba(99, 102, 241, 0.3),
+      0 0 100px rgba(99, 102, 241, 0.15);
+  }
+}
+
+/* EPICA border pulse for cards */
+@keyframes epic-border-pulse {
+  0%, 100% {
+    border-color: var(--rarity-epica);
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.3), inset 0 0 8px rgba(168, 85, 247, 0.08);
+  }
+  50% {
+    border-color: #c084fc;
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.5), inset 0 0 14px rgba(168, 85, 247, 0.15);
+  }
+}
+
+/* AI thinking spinner */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Cold glacier wall background -->
+  <rect width="400" height="400" fill="#030b14" />
+  <circle cx="200" cy="200" r="160" fill="url(#glacier-glow)" opacity="0.45" />
+
+  <!-- Trapped glowing entity in background -->
+  <circle cx="200" cy="200" r="30" fill="#ffffff" filter="blur(15px)" opacity="0.85" />
+  <path d="M 190,160 L 210,160 L 225,230 L 175,230 Z" fill="#00e5ff" filter="blur(6px)" opacity="0.6" />
+
+  <!-- Main Ice Block (faceted hexagon) -->
+  <polygon points="120,80 280,80 340,200 280,320 120,320 60,200" fill="url(#ice-body-grad)" stroke="#80deea" stroke-width="2.5" />
+  
+  <!-- Facet overlays to give the ice block a 3D cut glass look -->
+  <polygon points="120,80 200,60 280,80 200,200" fill="#ffffff" opacity="0.1" />
+  <polygon points="60,200 120,80 200,200 120,320" fill="#00d9ff" opacity="0.15" />
+  <polygon points="340,200 280,80 200,200 280,320" fill="#006680" opacity="0.2" />
+  
+  <!-- Glare reflections on edge -->
+  <line x1="120" y1="80" x2="60" y2="200" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.5" />
+  <line x1="280" y1="320" x2="340" y2="200" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.4" />
+
+  <!-- Sharp Icicles hanging from top -->
+  <polygon points="40,0 60,0 50,60" fill="#1b2a47" opacity="0.8" />
+  <polygon points="100,0 130,0 115,80" fill="#0d1b30" />
+  <polygon points="260,0 300,0 280,70" fill="#1b2a47" opacity="0.8" />
+  <polygon points="320,0 350,0 335,40" fill="#0d1b30" />
+
+  <defs>
+    <radialGradient id="glacier-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00d9ff" />
+      <stop offset="70%" stop-color="#051c33" />
+      <stop offset="100%" stop-color="#030b14" />
+    </radialGradient>
+    <linearGradient id="ice-body-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f7fa" stop-opacity="0.85" />
+      <stop offset="50%" stop-color="#4dd0e1" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#006064" stop-opacity="0.9" />
+    </linearGradient>
+  </defs>
+</svg>

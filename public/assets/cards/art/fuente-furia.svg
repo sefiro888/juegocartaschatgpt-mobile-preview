@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Background sky -->
+  <rect width="400" height="400" fill="#1b0808" />
+  <circle cx="200" cy="200" r="180" fill="url(#sky-grad)" opacity="0.3" />
+  
+  <!-- Lava glow from bottom -->
+  <rect x="0" y="320" width="400" height="80" fill="url(#lava-grad)" />
+
+  <!-- Volcano silhouette -->
+  <polygon points="50,340 200,80 350,340" fill="#0c0404" />
+  <polygon points="120,340 200,120 280,340" fill="#140606" />
+
+  <!-- Lava river from peak -->
+  <path d="M 200,100 Q 190,200 220,340 L 230,340 Q 200,200 210,100 Z" fill="#ff4d00" />
+  <path d="M 197,110 Q 185,180 195,260 Q 200,300 205,340 L 210,340 Q 205,300 200,260 Q 190,180 202,110 Z" fill="#ff9900" />
+
+  <!-- Magical Energy Flares / Smoke -->
+  <circle cx="200" cy="80" r="25" fill="#ff3300" filter="blur(8px)" opacity="0.8" />
+  <circle cx="200" cy="70" r="12" fill="#ffcc00" filter="blur(3px)" opacity="0.9" />
+
+  <!-- Stars / Embers in the sky -->
+  <circle cx="80" cy="90" r="2" fill="#ff9900" />
+  <circle cx="120" cy="150" r="3" fill="#ff3300" />
+  <circle cx="290" cy="110" r="2.5" fill="#ffcc00" />
+  <circle cx="310" cy="180" r="1.5" fill="#ff6600" />
+  
+  <!-- Gradients -->
+  <defs>
+    <radialGradient id="sky-grad" cx="50%" cy="100%" r="100%">
+      <stop offset="0%" stop-color="#ff3300" />
+      <stop offset="50%" stop-color="#990000" />
+      <stop offset="100%" stop-color="#1b0808" />
+    </radialGradient>
+    <linearGradient id="lava-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff3300" />
+      <stop offset="100%" stop-color="#330000" />
+    </linearGradient>
+  </defs>
+</svg>

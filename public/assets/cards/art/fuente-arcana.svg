@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Deep space nebula background -->
+  <rect width="400" height="400" fill="#040815" />
+  <circle cx="200" cy="200" r="180" fill="url(#arc-sky)" opacity="0.35" />
+
+  <!-- Mountain silhouettes -->
+  <polygon points="0,320 120,200 240,320" fill="#02040c" />
+  <polygon points="160,320 280,180 400,320" fill="#02040c" opacity="0.8" />
+
+  <!-- Crystalline lake at bottom -->
+  <ellipse cx="200" cy="340" rx="180" ry="50" fill="#032c45" stroke="#00e5ff" stroke-width="2.5" />
+  <ellipse cx="200" cy="340" rx="140" ry="35" fill="url(#lake-grad)" />
+
+  <!-- Glowing arcane crystals at lake side -->
+  <polygon points="60,340 50,290 80,330" fill="#00e5ff" />
+  <polygon points="320,330 340,280 350,335" fill="#00e5ff" />
+  
+  <!-- Glowing stars/rune sparkles -->
+  <circle cx="100" cy="80" r="1.5" fill="#fff" />
+  <circle cx="150" cy="140" r="2" fill="#00e5ff" />
+  <circle cx="280" cy="90" r="2.5" fill="#fff" filter="blur(1px)" />
+
+  <defs>
+    <radialGradient id="arc-sky" cx="50%" cy="100%" r="100%">
+      <stop offset="0%" stop-color="#00e5ff" />
+      <stop offset="60%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#040815" />
+    </radialGradient>
+    <linearGradient id="lake-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#00d9ff" stop-opacity="0.2" />
+    </linearGradient>
+  </defs>
+</svg>

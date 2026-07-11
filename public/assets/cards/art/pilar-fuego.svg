@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <rect width="400" height="400" fill="#140606" />
+
+  <!-- The Fire Pillar (magma column rising) -->
+  <rect x="150" y="50" width="100" height="300" rx="10" fill="url(#pilar-gr)" stroke="#ff3e3e" stroke-width="2" />
+  
+  <!-- Sparks surrounding it -->
+  <circle cx="120" cy="180" r="3" fill="#ffea00" />
+  <circle cx="280" cy="120" r="2" fill="#ff7700" />
+  <circle cx="130" cy="270" r="4" fill="#ff3c00" />
+  <circle cx="270" cy="240" r="2.5" fill="#ff9900" />
+
+  <defs>
+    <linearGradient id="pilar-gr" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ff1100" />
+      <stop offset="50%" stop-color="#ff7700" />
+      <stop offset="100%" stop-color="#ffea00" />
+    </linearGradient>
+  </defs>
+</svg>

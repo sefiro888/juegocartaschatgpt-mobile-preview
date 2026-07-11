@@ -1,0 +1,1230 @@
+import type { Card } from '../types/card';
+
+export const CARDS_DB: Record<string, Card> = {
+  // --- FURIA (20 cartas, IDs 1-12, 25-32) ---
+  'fuente-furia': {
+    id: 'fuente-furia',
+    name: 'Fuente de Furia',
+    faction: 'FURIA',
+    type: 'MANA',
+    subtype: 'Recurso de Fuego',
+    cost: { generic: 0 },
+    rarity: 'COMUN',
+    rulesText: 'Genera 1 de maná de Furia. (Límite de 1 maná jugado por turno)',
+    flavorText: '«El latido ígneo de la tierra misma no se puede apagar; fluye silencioso bajo el nexo esperando la chispa que lo libere.» — Leyenda del Cataclismo',
+    cardNumber: 1,
+    artPath: '/assets/cards/art/fuente-furia.png',
+    range: 1,
+    movement: 0,
+    artist: 'Ignis Fatuus',
+    artistStyle: 'Fantasía Oscura Digital'
+  },
+  'sabueso-brasa': {
+    id: 'sabueso-brasa',
+    name: 'Sabueso de Brasa',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Bestia',
+    cost: { generic: 1, furia: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Carga (Puede moverse y atacar inmediatamente al ser invocado).',
+    flavorText: 'El sabueso olfateó el aire cargado de azufre, soltando un ladrido que encendió la hojarasca a su paso. «No es solo una bestia, es una mecha andante», comentó el explorador.',
+    attack: 2,
+    maxHealth: 1,
+    cardNumber: 2,
+    artPath: '/assets/cards/art/sabueso-brasa.webp',
+    range: 1,
+    movement: 2,
+    artist: 'Kaelen Vane',
+    artistStyle: 'Pintura al Óleo'
+  },
+  'berserker-ignivoro': {
+    id: 'berserker-ignivoro',
+    name: 'Berserker Ignívoro',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Guerrero',
+    cost: { generic: 3, furia: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Furia: Cuando esta criatura ataca, se inflige 1 punto de daño a sí misma.',
+    flavorText: '«Su rabia es su fuerza, alimentada por su propia destrucción. Si debe arder para vencer, que así sea.» — Diario de campaña de Ignis',
+    attack: 4,
+    maxHealth: 2,
+    cardNumber: 3,
+    artPath: '/assets/cards/art/berserker-ignivoro.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Brutus Clay',
+    artistStyle: 'Boceto a Carbón / Sketch'
+  },
+  'dragon-caldera': {
+    id: 'dragon-caldera',
+    name: 'Dragón de la Caldera',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Dragón',
+    cost: { generic: 6, furia: 2 },
+    rarity: 'LEGENDARIA',
+    rulesText: 'Vuelo (Puede saltar obstáculos). Grito de Batalla: Inflige 2 de daño a todas las unidades enemigas adyacentes.',
+    flavorText: 'Cuando alza el vuelo, el cielo se tiñe de brasa y ceniza. Las leyendas dicen que duerme en el corazón del volcán nexo y despierta solo para reclamar su tributo de fuego.',
+    attack: 6,
+    maxHealth: 6,
+    cardNumber: 4,
+    artPath: '/assets/cards/art/dragon-caldera.webp',
+    range: 1,
+    movement: 2,
+    artist: 'Elysia Thorne',
+    artistStyle: 'Acuarela Mística'
+  },
+  'lluvia-ceniza': {
+    id: 'lluvia-ceniza',
+    name: 'Lluvia de Ceniza',
+    faction: 'FURIA',
+    type: 'HECHIZO',
+    subtype: 'Destrucción',
+    cost: { generic: 2, furia: 1 },
+    rarity: 'RARA',
+    rulesText: 'Inflige 3 puntos de daño a una unidad seleccionada o al Nexo objetivo.',
+    flavorText: '«Un aguacero de muerte ardiente que no respeta armaduras ni plegarias. Corre si puedes, aunque el cielo mismo te persiga.» — Canto de guerra de Furia',
+    cardNumber: 5,
+    artPath: '/assets/cards/art/lluvia-ceniza.webp',
+    range: 3,
+    movement: 0,
+    artist: 'Valerius',
+    artistStyle: 'Grabado Medieval en Madera'
+  },
+  'forja-carmesi': {
+    id: 'forja-carmesi',
+    name: 'Forja Carmesí',
+    faction: 'FURIA',
+    type: 'ESTRUCTURA',
+    subtype: 'Edificio',
+    cost: { generic: 3, furia: 1 },
+    rarity: 'RARA',
+    rulesText: 'Las unidades que invoques en casillas adyacentes a la Forja obtienen +1/+0 de forma permanente.',
+    flavorText: '«El metal al rojo vivo nunca duerme. Aquí forjamos las garras del nexo; cada golpe en el yunque es un latido de rabia.» — Herrero Grog',
+    maxHealth: 4,
+    cardNumber: 6,
+    artPath: '/assets/cards/art/forja-carmesi.webp',
+    range: 1,
+    movement: 0,
+    artist: 'Ignis Fatuus',
+    artistStyle: 'Fantasía Oscura Digital'
+  },
+  'chispa-fugaz': {
+    id: 'chispa-fugaz',
+    name: 'Chispa Fugaz',
+    faction: 'FURIA',
+    type: 'HECHIZO',
+    subtype: 'Evocación rápida',
+    cost: { generic: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Inflige 2 de daño a cualquier objetivo. Descarta una carta aleatoria de tu mano.',
+    flavorText: '«Un chispazo descontrolado en medio del nexo. Es rápida, letal e impredecible; a veces quema lo que querías salvar.» — Mago renegado del Nexo',
+    cardNumber: 7,
+    artPath: '/assets/cards/art/chispa-fugaz.webp',
+    range: 3,
+    movement: 0,
+    artist: 'Zoriel Moon',
+    artistStyle: 'Neon / Cyber-Glow'
+  },
+  'infiltrado-volcanico': {
+    id: 'infiltrado-volcanico',
+    name: 'Infiltrado Volcánico',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Pícaro',
+    cost: { generic: 2, furia: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Movimiento Diagonal: Puede desplazarse y atacar diagonalmente.',
+    flavorText: 'Se desplaza silencioso por los ríos de magma ardiente. Su silueta se confunde con las sombras de las rocas ígneas antes de asestar el golpe letal.',
+    attack: 2,
+    maxHealth: 2,
+    cardNumber: 8,
+    artPath: '/assets/cards/art/infiltrado-volcanico.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Lyra Frost',
+    artistStyle: 'Vidriera Gótica / Stained Glass'
+  },
+  'elemental-lava': {
+    id: 'elemental-lava',
+    name: 'Elemental de Lava',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Elemental',
+    cost: { generic: 4, furia: 2 },
+    rarity: 'EPICA',
+    rulesText: 'Último Aliento: Al morir, inflige 2 de daño a todas las unidades adyacentes en el tablero.',
+    flavorText: 'Piedra derretida que busca consumir el mundo. Cuando su núcleo colapsa, explota en un torrente de magma que reduce a cenizas todo a su alrededor.',
+    attack: 4,
+    maxHealth: 4,
+    cardNumber: 9,
+    artPath: '/assets/cards/art/elemental-lava.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Hokusai Runic',
+    artistStyle: 'Tinta Sumi-e Japonesa'
+  },
+  'muro-pomez': {
+    id: 'muro-pomez',
+    name: 'Muro de Piedra Pómez',
+    faction: 'FURIA',
+    type: 'ESTRUCTURA',
+    subtype: 'Muro',
+    cost: { generic: 2 },
+    rarity: 'COMUN',
+    rulesText: 'Obstrucción (No puede moverse ni atacar. Impide el paso enemigo).',
+    flavorText: 'Una barrera ligera pero tenaz de roca volcánica solidificada rápidamente. «No detendrá a un gigante, pero te dará tiempo para preparar las flechas de fuego.»',
+    maxHealth: 5,
+    cardNumber: 10,
+    artPath: '/assets/cards/art/muro-pomez.webp',
+    range: 1,
+    movement: 0,
+    artist: 'PixelLord',
+    artistStyle: 'Arte de Píxeles Retro / 16-Bit'
+  },
+  'impetu-fuego': {
+    id: 'impetu-fuego',
+    name: 'Ímpetu de Fuego',
+    faction: 'FURIA',
+    type: 'HECHIZO',
+    subtype: 'Bendición',
+    cost: { generic: 2 },
+    rarity: 'COMUN',
+    rulesText: 'Otorga +2/+0 y +1 de movimiento a una unidad aliada este turno.',
+    flavorText: '«El fuego del Nexo acelera la sangre y los reflejos. En su mirada solo hay rabia pura y el deseo indomable de embestir.» — Aethelgard',
+    cardNumber: 11,
+    artPath: '/assets/cards/art/impetu-fuego.webp',
+    range: 1,
+    movement: 0,
+    artist: 'Aria Star',
+    artistStyle: 'Comic Book / Cel-Shading'
+  },
+  'comandante-furia': {
+    id: 'comandante-furia',
+    name: 'Ignis, Cólera del Nexo',
+    faction: 'FURIA',
+    type: 'COMANDANTE',
+    subtype: 'Elemental Guerrero',
+    cost: { generic: 4, furia: 2 },
+    rarity: 'LEGENDARIA',
+    rulesText: 'Comandante. Habilidad Activa (1 Furia): Inflige 1 de daño a una unidad enemiga adyacente.',
+    flavorText: '«Que se queme hasta la última brizna. Así sabrán quién reina en las profundidades. Mi corona está hecha de llamas y mi trono de ceniza.» — Comandante Ignis',
+    attack: 4,
+    maxHealth: 25,
+    cardNumber: 12,
+    artPath: '/assets/cards/art/comandante-furia.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Ignis Fatuus',
+    artistStyle: 'Fantasía Oscura Digital'
+  },
+  'guerrero-ceniza': {
+    id: 'guerrero-ceniza',
+    name: 'Guerrero de Ceniza',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Guerrero',
+    cost: { generic: 2, furia: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Grito de Batalla: Inflige 1 de daño a una unidad adyacente en el tablero.',
+    flavorText: '«La ceniza no solo ciega; también arde con la fuerza del volcán de donde nació.» — Proverbio de los guerreros de Ignis',
+    attack: 3,
+    maxHealth: 2,
+    cardNumber: 25,
+    artPath: '/assets/cards/art/guerrero-ceniza.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Kaelen Vane',
+    artistStyle: 'Pintura al Óleo'
+  },
+  'fenix-renacido': {
+    id: 'fenix-renacido',
+    name: 'Fénix Renacido',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Fénix',
+    cost: { generic: 4, furia: 2 },
+    rarity: 'EPICA',
+    rulesText: 'Vuelo (Puede saltar obstáculos). Último Aliento: Regresa a tu mano al morir.',
+    flavorText: '«La muerte es solo un contratiempo para el fuego eterno. Caerá hoy, pero renacerá de su propio calor mañana.» — Sabiduría elemental de Ignis',
+    attack: 2,
+    maxHealth: 2,
+    cardNumber: 26,
+    artPath: '/assets/cards/art/fenix-renacido.webp',
+    range: 1,
+    movement: 2,
+    artist: 'Elysia Thorne',
+    artistStyle: 'Acuarela Mística'
+  },
+  'draco-magma': {
+    id: 'draco-magma',
+    name: 'Draco de Magma',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Dragón',
+    cost: { generic: 5, furia: 1 },
+    rarity: 'RARA',
+    rulesText: 'Carga. Al atacar, inflige 1 de daño al Nexo enemigo directamente.',
+    flavorText: 'Su sangre es lava pura y su furia, indomable. Su rugido agita los cimientos del Nexo antes de que embista directamente contra la fortaleza enemiga.',
+    attack: 4,
+    maxHealth: 4,
+    cardNumber: 27,
+    artPath: '/assets/cards/art/draco-magma.webp',
+    range: 1,
+    movement: 2,
+    artist: 'Zoriel Moon',
+    artistStyle: 'Neon / Cyber-Glow'
+  },
+  'trasgo-piroclastico': {
+    id: 'trasgo-piroclastico',
+    name: 'Trasgo Piroclástico',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Trasgo',
+    cost: { generic: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Carga. Grito de Batalla: Descarta una carta de tu mano de forma aleatoria.',
+    flavorText: '«Pequeño, molesto y extremadamente destructivo. No le importa si se quema él mismo con tal de verte arder.» — Notas de exploración de los magos del Domo',
+    attack: 2,
+    maxHealth: 1,
+    cardNumber: 28,
+    artPath: '/assets/cards/art/trasgo-piroclastico.webp',
+    range: 1,
+    movement: 2,
+    artist: 'Brutus Clay',
+    artistStyle: 'Boceto a Carbón / Sketch'
+  },
+  'golem-fundicion': {
+    id: 'golem-fundicion',
+    name: 'Golem de la Fundición',
+    faction: 'FURIA',
+    type: 'UNIDAD',
+    subtype: 'Golem',
+    cost: { generic: 5, furia: 2 },
+    rarity: 'EPICA',
+    rulesText: 'Al final de tu turno, inflige 1 de daño a todas las unidades adyacentes (aliadas y enemigas).',
+    flavorText: 'Un horno viviente que derrite el suelo bajo sus pies. Su simple presencia hace que el acero empiece a licuarse y la piedra se agriete.',
+    attack: 5,
+    maxHealth: 5,
+    cardNumber: 29,
+    artPath: '/assets/cards/art/golem-fundicion.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Ignis Fatuus',
+    artistStyle: 'Fantasía Oscura Digital'
+  },
+  'furia-nexo': {
+    id: 'furia-nexo',
+    name: 'Furia del Nexo',
+    faction: 'FURIA',
+    type: 'HECHIZO',
+    subtype: 'Evocación ígnea',
+    cost: { generic: 3, furia: 1 },
+    rarity: 'RARA',
+    rulesText: 'Otorga +3/+0 y Carga a una unidad aliada este turno.',
+    flavorText: '«La rabia del Nexo desatada en un solo golpe. Una fuerza tan destructiva que consume los músculos y el alma del portador en minutos.»',
+    cardNumber: 30,
+    artPath: '/assets/cards/art/furia-nexo.webp',
+    range: 1,
+    movement: 0,
+    artist: 'Aria Star',
+    artistStyle: 'Comic Book / Cel-Shading'
+  },
+  'erupcion-volcanica': {
+    id: 'erupcion-volcanica',
+    name: 'Erupción Volcánica',
+    faction: 'FURIA',
+    type: 'HECHIZO',
+    subtype: 'Cataclismo',
+    cost: { generic: 5, furia: 2 },
+    rarity: 'EPICA',
+    rulesText: 'Inflige 2 de daño a todas las unidades en el tablero.',
+    flavorText: '«La ira del volcán consume a justos y pecadores por igual. Cuando la tierra ruge, no hay escudo que aguante la marea de fuego.» — Crónicas del Domo',
+    cardNumber: 31,
+    artPath: '/assets/cards/art/erupcion-volcanica.webp',
+    range: 5,
+    movement: 0,
+    artist: 'Valerius',
+    artistStyle: 'Grabado Medieval en Madera'
+  },
+  'pilar-fuego': {
+    id: 'pilar-fuego',
+    name: 'Pilar de Fuego',
+    faction: 'FURIA',
+    type: 'ESTRUCTURA',
+    subtype: 'Pilar',
+    cost: { generic: 4, furia: 1 },
+    rarity: 'RARA',
+    rulesText: 'Al inicio de tu turno, inflige 2 de daño a una unidad enemiga aleatoria en la misma fila del Pilar.',
+    flavorText: 'Una columna de fuego constante que calcina la retaguardia enemiga. Los soldados aprenden rápido a evitar su línea de visión abrasadora.',
+    maxHealth: 5,
+    cardNumber: 32,
+    artPath: '/assets/cards/art/pilar-fuego.webp',
+    range: 4,
+    movement: 0,
+    artist: 'PixelLord',
+    artistStyle: 'Arte de Píxeles Retro / 16-Bit'
+  },
+
+  // --- ARCANO (20 cartas, IDs 13-24, 33-40) ---
+  'fuente-arcana': {
+    id: 'fuente-arcana',
+    name: 'Fuente Arcana',
+    faction: 'ARCANO',
+    type: 'MANA',
+    subtype: 'Recurso Arcano',
+    cost: { generic: 0 },
+    rarity: 'COMUN',
+    rulesText: 'Genera 1 de maná de Arcano. (Límite de 1 maná jugado por turno)',
+    flavorText: '«La corriente fría de la energía pura y silenciosa que sostiene el Domo. Es el fluir del cosmos que pacifica el alma.» — Aethelgard',
+    cardNumber: 13,
+    artPath: '/assets/cards/art/fuente-arcana.png',
+    range: 1,
+    movement: 0,
+    artist: 'Lyra Frost',
+    artistStyle: 'Vidriera Gótica / Stained Glass'
+  },
+  'centinela-cristal': {
+    id: 'centinela-cristal',
+    name: 'Centinela de Cristal',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Golem',
+    cost: { generic: 2, arcano: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Resistencia: Ignora el primer punto de daño que recibe en cada turno.',
+    flavorText: 'Piedra rúnica tallada en cristal que repele los impactos. Sus runas brillan con luz azul fría con cada golpe absorbido.',
+    attack: 1,
+    maxHealth: 4,
+    cardNumber: 14,
+    artPath: '/assets/cards/art/centinela-cristal.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Hokusai Runic',
+    artistStyle: 'Tinta Sumi-e Japonesa'
+  },
+  'tejedora-escarcha': {
+    id: 'tejedora-escarcha',
+    name: 'Tejedora de Escarcha',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Mago',
+    cost: { generic: 3, arcano: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Grito de Batalla: Congela a una unidad enemiga por 1 turno (No puede moverse ni atacar).',
+    flavorText: '«Su aliento hiela el aire y detiene los corazones más férreos. El calor es una debilidad pasajera.» — Lección de la Tejedora a sus aprendices',
+    attack: 2,
+    maxHealth: 3,
+    cardNumber: 15,
+    artPath: '/assets/cards/art/tejedora-escarcha.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Elysia Thorne',
+    artistStyle: 'Acuarela Mística'
+  },
+  'prision-glacial': {
+    id: 'prision-glacial',
+    name: 'Prisión Glacial',
+    faction: 'ARCANO',
+    type: 'HECHIZO',
+    subtype: 'Control',
+    cost: { generic: 2, arcano: 1 },
+    rarity: 'RARA',
+    rulesText: 'Congela a una unidad enemiga en el tablero durante 2 turnos.',
+    flavorText: '«El hielo eterno detiene todo calor e ímpetu. Incluso el gigante más enfurecido se ve reducido a una estatua inmóvil.» — Sabiduría del Sabio del Domo',
+    cardNumber: 16,
+    artPath: '/assets/cards/art/prision-glacial.webp',
+    range: 3,
+    movement: 0,
+    artist: 'Valerius',
+    artistStyle: 'Grabado Medieval en Madera'
+  },
+  'cometa-arcano': {
+    id: 'cometa-arcano',
+    name: 'Cometa Arcano',
+    faction: 'ARCANO',
+    type: 'HECHIZO',
+    subtype: 'Evocación cósmica',
+    cost: { generic: 4, arcano: 2 },
+    rarity: 'RARA',
+    rulesText: 'Inflige 4 de daño a una unidad enemiga. Roba una carta de tu mazo.',
+    flavorText: 'Una estrella fugaz de energía destilada del Domo. Su impacto abre grietas en la realidad del Nexo, liberando conocimientos olvidados.',
+    cardNumber: 17,
+    artPath: '/assets/cards/art/cometa-arcano.webp',
+    range: 4,
+    movement: 0,
+    artist: 'Zoriel Moon',
+    artistStyle: 'Neon / Cyber-Glow'
+  },
+  'torre-horizonte': {
+    id: 'torre-horizonte',
+    name: 'Torre del Horizonte',
+    faction: 'ARCANO',
+    type: 'ESTRUCTURA',
+    subtype: 'Edificio',
+    cost: { generic: 3, arcano: 1 },
+    rarity: 'EPICA',
+    rulesText: 'Al comienzo de tu turno, roba 1 carta.',
+    flavorText: 'Desde su cúspide celestial, las posibilidades se despliegan infinitas ante los astrónomos del Domo. Nada escapa a su lente celestial.',
+    maxHealth: 4,
+    cardNumber: 18,
+    artPath: '/assets/cards/art/torre-horizonte.webp',
+    range: 1,
+    movement: 0,
+    artist: 'Lyra Frost',
+    artistStyle: 'Vidriera Gótica / Stained Glass'
+  },
+  'aprendiz-nexo': {
+    id: 'aprendiz-nexo',
+    name: 'Aprendiz del Nexo',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Estudiante',
+    cost: { generic: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Tus hechizos cuestan 1 menos de maná genérico (mínimo 1).',
+    flavorText: 'Un estudiante ansioso de poder que memoriza runas sin cesar. «La concentración abre las puertas del nexo; el resto es solo voluntad.»',
+    attack: 1,
+    maxHealth: 2,
+    cardNumber: 19,
+    artPath: '/assets/cards/art/aprendiz-nexo.png',
+    range: 1,
+    movement: 1,
+    artist: 'PixelLord',
+    artistStyle: 'Arte de Píxeles Retro / 16-Bit'
+  },
+  'barrera-hielo': {
+    id: 'barrera-hielo',
+    name: 'Barrera de Hielo',
+    faction: 'ARCANO',
+    type: 'ESTRUCTURA',
+    subtype: 'Muro',
+    cost: { generic: 2 },
+    rarity: 'COMUN',
+    rulesText: 'Obstrucción. Cuando es atacada cuerpo a cuerpo, congela al atacante por 1 turno.',
+    flavorText: 'Tocarla es quedar atrapado por la escarcha eterna del polo norte. Los atacantes quedan petrificados al instante al tocar el hielo puro.',
+    maxHealth: 4,
+    cardNumber: 20,
+    artPath: '/assets/cards/art/barrera-hielo.png',
+    range: 1,
+    movement: 0,
+    artist: 'Brutus Clay',
+    artistStyle: 'Boceto a Carbón / Sketch'
+  },
+  'destello-runico': {
+    id: 'destello-runico',
+    name: 'Destello Rúnico',
+    faction: 'ARCANO',
+    type: 'HECHIZO',
+    subtype: 'Conjuro rápido',
+    cost: { generic: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Congela a una unidad enemiga adyacente a tu Comandante y roba 1 carta.',
+    flavorText: '«Un destello cegador que emana del báculo rúnico para aturdir a los agresores más atrevidos.» — Comandante Aethelgard',
+    cardNumber: 21,
+    artPath: '/assets/cards/art/destello-runico.png',
+    range: 2,
+    movement: 0,
+    artist: 'Aria Star',
+    artistStyle: 'Comic Book / Cel-Shading'
+  },
+  'golem-glaciar': {
+    id: 'golem-glaciar',
+    name: 'Golem de Glaciar',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Golem',
+    cost: { generic: 5, arcano: 2 },
+    rarity: 'LEGENDARIA',
+    rulesText: 'Inmune a Hechizos: No puede ser objetivo de hechizos de ningún jugador.',
+    flavorText: 'Hielo antiguo modelado con la fuerza silenciosa de los siglos. Las runas arcanas que lo mantienen en pie repelen todo intento de encantamiento.',
+    attack: 3,
+    maxHealth: 6,
+    cardNumber: 22,
+    artPath: '/assets/cards/art/golem-glaciar.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Kaelen Vane',
+    artistStyle: 'Pintura al Óleo'
+  },
+  'vortice-mana': {
+    id: 'vortice-mana',
+    name: 'Vórtice de Maná',
+    faction: 'ARCANO',
+    type: 'HECHIZO',
+    subtype: 'Transmutación',
+    cost: { generic: 3, arcano: 1 },
+    rarity: 'EPICA',
+    rulesText: 'Devuelve una unidad del tablero a la mano de su propietario.',
+    flavorText: '«La energía del Nexo gira en sentido contrario, deshaciendo la materia y enviando la criatura de vuelta al plano de su invocación.» — Libro de hechizos del Domo',
+    cardNumber: 23,
+    artPath: '/assets/cards/art/vortice-mana.png',
+    range: 3,
+    movement: 0,
+    artist: 'Hokusai Runic',
+    artistStyle: 'Tinta Sumi-e Japonesa'
+  },
+  'comandante-arcano': {
+    id: 'comandante-arcano',
+    name: 'Aethelgard, Sabio del Domo',
+    faction: 'ARCANO',
+    type: 'COMANDANTE',
+    subtype: 'Mago Comandante',
+    cost: { generic: 4, arcano: 2 },
+    rarity: 'LEGENDARIA',
+    rulesText: 'Comandante. Habilidad Activa (1 Arcano): Roba una carta.',
+    flavorText: '«En el silencio del hielo eterno, la verdad del universo se revela a quienes saben escuchar. Mi mente abarca todas las posibilidades del Nexo.» — Aethelgard',
+    attack: 2,
+    maxHealth: 25,
+    cardNumber: 24,
+    artPath: '/assets/cards/art/comandante-arcano.webp',
+    range: 2,
+    movement: 1,
+    artist: 'Lyra Frost',
+    artistStyle: 'Vidriera Gótica / Stained Glass'
+  },
+  'buho-runico': {
+    id: 'buho-runico',
+    name: 'Búho Rúnico',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Bestia',
+    cost: { generic: 2, arcano: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Vuelo. Al inicio de tu turno, roba 1 carta y descarta 1 carta.',
+    flavorText: 'Su vuelo nocturno dibuja constelaciones en la tundra helada. Su sabiduría otorga nuevas ideas al mago, pero exige deshacerse de viejos conceptos.',
+    attack: 1,
+    maxHealth: 3,
+    cardNumber: 33,
+    artPath: '/assets/cards/art/buho-runico.webp',
+    range: 1,
+    movement: 2,
+    artist: 'Elysia Thorne',
+    artistStyle: 'Acuarela Mística'
+  },
+  'elemental-tormenta': {
+    id: 'elemental-tormenta',
+    name: 'Elemental de Tormenta',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Elemental',
+    cost: { generic: 4, arcano: 2 },
+    rarity: 'EPICA',
+    rulesText: 'Grito de Batalla: Congela a 2 unidades enemigas aleatorias en el tablero por 1 turno.',
+    flavorText: 'El viento helado se materializa en una ráfaga devastadora. Su simple paso congela instantáneamente las articulaciones de los rivales desprotegidos.',
+    attack: 3,
+    maxHealth: 3,
+    cardNumber: 34,
+    artPath: '/assets/cards/art/elemental-tormenta.webp',
+    range: 1,
+    movement: 1,
+    artist: 'Zoriel Moon',
+    artistStyle: 'Neon / Cyber-Glow'
+  },
+  'avatar-cosmos': {
+    id: 'avatar-cosmos',
+    name: 'Avatar del Cosmos',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Espíritu',
+    cost: { generic: 6, arcano: 2 },
+    rarity: 'LEGENDARIA',
+    rulesText: 'Inmune a Hechizos. Tus hechizos cuestan 1 menos (mínimo 1 maná).',
+    flavorText: 'Nacido del vacío infinito entre las estrellas, posee el conocimiento absoluto. Su presencia altera el flujo mágico del nexo a favor del invocador.',
+    attack: 5,
+    maxHealth: 5,
+    cardNumber: 35,
+    artPath: '/assets/cards/art/avatar-cosmos.webp',
+    range: 2,
+    movement: 1,
+    artist: 'Ignis Fatuus',
+    artistStyle: 'Fantasía Oscura Digital'
+  },
+  'tejedora-tiempo': {
+    id: 'tejedora-tiempo',
+    name: 'Tejedora del Tiempo',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Mago',
+    cost: { generic: 3, arcano: 1 },
+    rarity: 'RARA',
+    rulesText: 'Grito de Batalla: Selecciona una unidad aliada. Puede moverse y atacar una segunda vez este turno.',
+    flavorText: '«El tiempo no es lineal, es un hilo más en mi telar. Si quieres volver a golpear, déjame desenredar tu momento.» — Tejedora del Tiempo',
+    attack: 2,
+    maxHealth: 2,
+    cardNumber: 36,
+    artPath: '/assets/cards/art/tejedora-tiempo.png',
+    range: 1,
+    movement: 1,
+    artist: 'Aria Star',
+    artistStyle: 'Comic Book / Cel-Shading'
+  },
+  'mago-runa-helada': {
+    id: 'mago-runa-helada',
+    name: 'Mago de Runa Helada',
+    faction: 'ARCANO',
+    type: 'UNIDAD',
+    subtype: 'Mago',
+    cost: { generic: 3, arcano: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Cuando esta unidad inflige daño de combate a otra unidad, la congela por 1 turno.',
+    flavorText: 'Cada golpe de su báculo rúnico congela la sangre de su rival, deteniendo su avance por completo. «No mato por fuego, mato por quietud.»',
+    attack: 2,
+    maxHealth: 3,
+    cardNumber: 37,
+    artPath: '/assets/cards/art/mago-runa-helada.png',
+    range: 2,
+    movement: 1,
+    artist: 'Hokusai Runic',
+    artistStyle: 'Tinta Sumi-e Japonesa'
+  },
+  'congelacion-rapida': {
+    id: 'congelacion-rapida',
+    name: 'Congelación Rápida',
+    faction: 'ARCANO',
+    type: 'HECHIZO',
+    subtype: 'Conjuro helado',
+    cost: { generic: 1, arcano: 1 },
+    rarity: 'COMUN',
+    rulesText: 'Congela a una unidad enemiga en el tablero. Roba 1 carta.',
+    flavorText: '«Un suspiro frío en el aire y el objetivo se detiene rígido, mientras sus pensamientos se vuelven transparentes para el invocador.» — Lección del Domo',
+    cardNumber: 38,
+    artPath: '/assets/cards/art/congelacion-rapida.svg',
+    range: 3,
+    movement: 0,
+    artist: 'PixelLord',
+    artistStyle: 'Arte de Píxeles Retro / 16-Bit'
+  },
+  'tormenta-mana': {
+    id: 'tormenta-mana',
+    name: 'Tormenta de Maná',
+    faction: 'ARCANO',
+    type: 'HECHIZO',
+    subtype: 'Tormenta',
+    cost: { generic: 4, arcano: 1 },
+    rarity: 'RARA',
+    rulesText: 'Congela a todas las unidades en la columna seleccionada del tablero.',
+    flavorText: 'Una ventisca cósmica que paraliza líneas enteras de infantería enemiga. El frío desciende directamente del Domo, inmovilizando los peones enemigos.',
+    cardNumber: 39,
+    artPath: '/assets/cards/art/tormenta-mana.svg',
+    range: 3,
+    movement: 0,
+    artist: 'Valerius',
+    artistStyle: 'Grabado Medieval en Madera'
+  },
+  'templo-runico': {
+    id: 'templo-runico',
+    name: 'Templo Rúnico',
+    faction: 'ARCANO',
+    type: 'ESTRUCTURA',
+    subtype: 'Edificio',
+    cost: { generic: 3 },
+    rarity: 'COMUN',
+    rulesText: 'Tus comandantes tienen +1 de ataque y Resistencia (ignoran 1 punto de daño).',
+    flavorText: '«El nexo del templo sagrado irradia energía protectora al sabio, convirtiendo su báculo en un arma letal y su túnica en un escudo rúnico.»',
+    maxHealth: 4,
+    cardNumber: 40,
+    artPath: '/assets/cards/art/templo-runico.svg',
+    range: 1,
+    movement: 0,
+    artist: 'Brutus Clay',
+    artistStyle: 'Boceto a Carbón / Sketch'
+  },
+  'obstaculo-lava': {
+    id: 'obstaculo-lava',
+    name: 'Cráter de Lava',
+    faction: 'FURIA',
+    type: 'ESTRUCTURA',
+    subtype: 'Obstáculo',
+    cost: { generic: 99 },
+    rarity: 'COMUN',
+    rulesText: 'Bloquea el paso. Intransitable por cualquier criatura.',
+    flavorText: '«Una profunda grieta que expulsa vapores sulfúricos. Cruzarla es una muerte segura.»',
+    maxHealth: 99,
+    cardNumber: 0,
+    artPath: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="100%" height="100%" fill="%232d0b0b"/><circle cx="100" cy="100" r="60" fill="%23ef4444" opacity="0.3" filter="blur(5px)"/><polygon points="70,50 130,50 140,150 60,150" fill="%237f1d1d" stroke="%23f59e0b" stroke-width="4"/><circle cx="100" cy="100" r="15" fill="%23f59e0b"/></svg>',
+    range: 1,
+    movement: 0,
+    artist: 'Naturaleza del Nexo',
+    artistStyle: 'Volcánico'
+  },
+  'obstaculo-pilar': {
+    id: 'obstaculo-pilar',
+    name: 'Pilar Rúnico',
+    faction: 'FURIA',
+    type: 'ESTRUCTURA',
+    subtype: 'Obstáculo',
+    cost: { generic: 99 },
+    rarity: 'COMUN',
+    rulesText: 'Bloquea el paso. Resiste el impacto del combate.',
+    flavorText: '«Un monolito erigido en el centro del Nexo que canaliza energías magnéticas.»',
+    maxHealth: 99,
+    cardNumber: 0,
+    artPath: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="100%" height="100%" fill="%230f172a"/><circle cx="100" cy="100" r="60" fill="%2306b6d4" opacity="0.3" filter="blur(5px)"/><rect x="75" y="40" width="50" height="120" fill="%231e293b" stroke="%233b82f6" stroke-width="4"/><path d="M 90 70 L 110 70 M 100 70 L 100 130" stroke="%2306b6d4" stroke-width="3"/></svg>',
+    range: 1,
+    movement: 0,
+    artist: 'Constructores del Domo',
+    artistStyle: 'Rúnico'
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// DYNAMIC SVG ILLUSTRATION GENERATOR FOR ALL 400 CARDS
+// ═══════════════════════════════════════════════════
+export function getSvgIllustration(card: {
+  id: string;
+  name: string;
+  faction: string;
+  type: string;
+  subtype: string;
+  rarity: string;
+  artistStyle: string;
+}): string {
+  const isFuria = card.faction === 'FURIA';
+  
+  // 1. Color palette definitions based on faction and style
+  const color1 = isFuria ? '#ef4444' : '#06b6d4';
+  const color2 = isFuria ? '#7f1d1d' : '#0f172a';
+  const color3 = isFuria ? '#f59e0b' : '#3b82f6';
+  const colorAccent = isFuria ? '#fef08a' : '#e0f2fe';
+
+  let bgGradient = `<linearGradient id="bgGrad_${card.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="${color2}" />
+    <stop offset="100%" stop-color="${isFuria ? '#2b0909' : '#030712'}" />
+  </linearGradient>`;
+
+  let overlayGrad = `<radialGradient id="radialGrad_${card.id}" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="${color1}" stop-opacity="0.35" />
+    <stop offset="100%" stop-color="${color2}" stop-opacity="0" />
+  </radialGradient>`;
+
+  let styleMarkup = '';
+  const style = card.artistStyle;
+
+  // 2. Render geometric artwork overlays based on artist styles
+  if (style === 'Cyberpunk de Neón') {
+    styleMarkup += `
+      <pattern id="neonGrid_${card.id}" width="15" height="15" patternUnits="userSpaceOnUse">
+        <path d="M 15 0 L 0 0 0 15" fill="none" stroke="${color1}" stroke-width="0.5" stroke-opacity="0.25"/>
+      </pattern>
+      <rect width="100%" height="100%" fill="url(#neonGrid_${card.id})" />
+      <polygon points="100,30 40,150 160,150" fill="none" stroke="${color3}" stroke-width="1.5" stroke-opacity="0.4" />
+      <polygon points="100,50 60,140 140,140" fill="none" stroke="${colorAccent}" stroke-width="1" stroke-opacity="0.3" />
+    `;
+  } else if (style === 'Mosaico de Cristal / Vidriera') {
+    styleMarkup += `
+      <g opacity="0.45" stroke="#111827" stroke-width="1.5">
+        <polygon points="0,0 70,0 50,60" fill="${color1}" />
+        <polygon points="70,0 200,0 120,70 50,60" fill="${color2}" />
+        <polygon points="0,0 50,60 0,110" fill="${color3}" />
+        <polygon points="50,60 120,70 90,130 30,120" fill="${colorAccent}" />
+        <polygon points="120,70 200,0 200,90" fill="${color1}" />
+        <polygon points="120,70 200,90 160,150 90,130" fill="${color3}" />
+        <polygon points="0,110 50,60 30,120 0,180" fill="${color2}" />
+        <polygon points="30,120 90,130 110,200 0,200 0,180" fill="${colorAccent}" />
+        <polygon points="90,130 160,150 200,200 110,200" fill="${color1}" />
+        <polygon points="160,150 200,90 200,200" fill="${color2}" />
+      </g>
+    `;
+  } else if (style === 'Grabado Medieval en Madera') {
+    styleMarkup += `
+      <g opacity="0.25" stroke="#ffffff" stroke-width="0.8">
+        <line x1="0" y1="10" x2="200" y2="210" />
+        <line x1="0" y1="30" x2="200" y2="230" />
+        <line x1="0" y1="50" x2="200" y2="250" />
+        <line x1="0" y1="70" x2="200" y2="270" />
+        <line x1="0" y1="-10" x2="200" y2="190" />
+        <line x1="0" y1="-30" x2="200" y2="170" />
+      </g>
+      <rect x="5" y="5" width="190" height="190" fill="none" stroke="${colorAccent}" stroke-width="2" stroke-opacity="0.3" stroke-dasharray="6,4" />
+    `;
+  } else if (style === 'Grabado Rúnico Metálico') {
+    styleMarkup += `
+      <rect width="100%" height="100%" fill="none" stroke="${colorAccent}" stroke-width="1" stroke-opacity="0.2" />
+      <circle cx="100" cy="100" r="70" fill="none" stroke="${colorAccent}" stroke-width="1.2" stroke-opacity="0.25" stroke-dasharray="10,5" />
+      <path d="M 85 85 L 100 70 L 115 85 M 100 70 L 100 115 M 85 100 L 115 100" fill="none" stroke="${colorAccent}" stroke-width="2" stroke-opacity="0.6" />
+      <path d="M 80 120 L 100 135 L 120 120" fill="none" stroke="${color3}" stroke-width="1.5" stroke-opacity="0.5" />
+    `;
+  } else if (style === 'Acuarela Mística') {
+    styleMarkup += `
+      <circle cx="70" cy="80" r="55" fill="${color1}" opacity="0.35" filter="blur(10px)" />
+      <circle cx="130" cy="110" r="45" fill="${color3}" opacity="0.3" filter="blur(8px)" />
+      <circle cx="100" cy="60" r="35" fill="${colorAccent}" opacity="0.25" filter="blur(6px)" />
+    `;
+  } else if (style === 'Boceto a Carbón / Sketch') {
+    styleMarkup += `
+      <path d="M 10,20 Q 80,180 190,40" fill="none" stroke="#fff" stroke-width="1.5" stroke-opacity="0.25" />
+      <path d="M 30,180 Q 120,30 170,160" fill="none" stroke="#fff" stroke-width="1" stroke-opacity="0.2" />
+      <path d="M 5,90 L 195,110" fill="none" stroke="${color1}" stroke-width="1" stroke-opacity="0.15" />
+    `;
+  } else {
+    styleMarkup += `
+      <circle cx="100" cy="100" r="60" fill="none" stroke="${color1}" stroke-width="1.5" stroke-opacity="0.3" />
+      <circle cx="100" cy="100" r="45" fill="none" stroke="${color3}" stroke-width="1" stroke-opacity="0.25" />
+      <circle cx="100" cy="100" r="30" fill="none" stroke="${colorAccent}" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="4,3" />
+    `;
+  }
+
+  // 3. Central Icon depending on Card Type
+  let iconMarkup = '';
+  if (card.type === 'UNIDAD') {
+    iconMarkup = `
+      <g stroke="${colorAccent}" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(75, 75) scale(0.4)">
+        <path d="M 25 5 L 45 12 L 45 35 C 45 47 25 55 25 55 C 25 55 5 47 5 35 L 5 12 Z" stroke="${colorAccent}" stroke-width="4" />
+        <path d="M 25 12 L 25 47" stroke="${colorAccent}" stroke-width="3" />
+        <circle cx="25" cy="30" r="7" fill="${color1}" stroke="none" />
+      </g>
+    `;
+  } else if (card.type === 'ESTRUCTURA') {
+    iconMarkup = `
+      <g stroke="${colorAccent}" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(75, 72) scale(0.4)">
+        <polygon points="25,5 45,20 40,55 10,55 5,20" stroke="${colorAccent}" stroke-width="4" fill="${color2}" />
+        <rect x="21" y="25" width="8" height="15" stroke="${color3}" stroke-width="3" />
+        <line x1="25" y1="5" x2="25" y2="55" stroke="${colorAccent}" stroke-width="2" stroke-opacity="0.5" />
+      </g>
+    `;
+  } else if (card.type === 'HECHIZO') {
+    iconMarkup = `
+      <g stroke="${colorAccent}" fill="none" stroke-linecap="round" transform="translate(75, 75) scale(0.4)">
+        <path d="M 25 5 C 10 25, 40 25, 25 45 C 10 25, 40 25, 25 5 Z" stroke="${colorAccent}" stroke-width="4" fill="url(#radialGrad_${card.id})" />
+        <circle cx="25" cy="25" r="6" fill="${colorAccent}" stroke="none" />
+        <path d="M 10 25 L 40 25 M 25 10 L 25 40" stroke="${colorAccent}" stroke-dasharray="2,2" stroke-width="2" />
+      </g>
+    `;
+  } else {
+    iconMarkup = `
+      <g stroke="${colorAccent}" fill="none" transform="translate(75, 75) scale(0.4)">
+        <polygon points="25,7 42,25 25,43 8,25" stroke="${colorAccent}" stroke-width="4" />
+        <polygon points="25,14 36,25 25,36 14,25" stroke="${color3}" stroke-width="2.5" fill="${color1}" fill-opacity="0.3" />
+      </g>
+    `;
+  }
+
+  // 4. Build complete SVG and pack into Data URL
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+    <defs>
+      ${bgGradient}
+      ${overlayGrad}
+    </defs>
+    <rect width="100%" height="100%" fill="url(#bgGrad_${card.id})" />
+    <rect width="100%" height="100%" fill="url(#radialGrad_${card.id})" />
+    ${styleMarkup}
+    ${iconMarkup}
+  </svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+// ═══════════════════════════════════════════════════
+// PROGRAMMATIC CARD GENERATION (TO REACH 400 UNIQUE CARDS)
+// ═══════════════════════════════════════════════════
+function generateRemainingCards() {
+  const rarities = ['COMUN', 'RARA', 'EPICA', 'LEGENDARIA'] as const;
+  const cardTypes = ['UNIDAD', 'ESTRUCTURA', 'HECHIZO'] as const;
+  const styles = [
+    'Fantasía Oscura Digital', 'Pintura al Óleo', 'Boceto a Carbón / Sketch',
+    'Acuarela Mística', 'Grabado Medieval en Madera', 'Cyberpunk de Neón',
+    'Anime Ilustrado a Mano', 'Mosaico de Cristal / Vidriera', 'Fantasía Épica Clásica',
+    'Grabado Rúnico Metálico'
+  ];
+  const artists = [
+    'Ignis Fatuus', 'Kaelen Vane', 'Brutus Clay', 'Elysia Thorne',
+    'Valerius', 'Vectoria Spark', 'Haruto Sato', 'Vitreus Art',
+    'Elena Petrova', 'Rune Carver'
+  ];
+
+  // Furia (Ignis) vocabulary
+  const furiaNounsUnits = ['Guerrero', 'Devastador', 'Campeón', 'Cazador', 'Bestia', 'Elemental', 'Can', 'Minotauro', 'Trasgo', 'Fénix', 'Grifo', 'Basilisco', 'Quimera', 'Gigante', 'Titán', 'Golem', 'Defensor', 'Asolador', 'Cenizo'];
+  const furiaNounsStructs = ['Forja', 'Altar', 'Muralla', 'Portal', 'Torre', 'Bastión', 'Baluarte', 'Cráter', 'Núcleo'];
+  const furiaNounsSpells = ['Llama', 'Erupción', 'Lluvia', 'Chispa', 'Impulso', 'Ignición', 'Calcinación', 'Explosión', 'Cataclismo', 'Fuego', 'Ráfaga', 'Tormento'];
+  const furiaAdjectives = ['Carmesí', 'Ígneo', 'Volcánico', 'de Ceniza', 'de Lava', 'Quemante', 'del Caos', 'Devastador', 'de Brasa', 'Piroclástico', 'de Fundición', 'del Nexo', 'Asolador', 'Infernal', 'del Magma', 'Colosal', 'Eterno'];
+
+  // Arcano (Aethelgard) vocabulary
+  const arcanoNounsUnits = ['Mago', 'Aprendiz', 'Tejedora', 'Elemental', 'Búho', 'Centinela', 'Guardián', 'Archimago', 'Sabio', 'Clérigo', 'Druida', 'Golem', 'Espíritu', 'Sombra', 'Aparición', 'Espectro', 'Esfinge'];
+  const arcanoNounsStructs = ['Templo', 'Torre', 'Barrera', 'Portal', 'Prisma', 'Santuario', 'Monolito', 'Obelisco', 'Biblioteca'];
+  const arcanoNounsSpells = ['Prisión', 'Vórtice', 'Cometa', 'Tormenta', 'Congelación', 'Destello', 'Ventisca', 'Runa', 'Hechizo', 'Ráfaga', 'Ilusión', 'Vacío'];
+  const arcanoAdjectives = ['Glaciar', 'Celestial', 'del Cosmos', 'Rúnico', 'Estelar', 'Escarchado', 'Glacial', 'de Hielo', 'de Maná', 'Temporal', 'del Nexo', 'Sagrado', 'Espectral', 'del Vacío', 'Silencioso', 'Cristalino', 'Eterno'];
+
+  const getSubtype = (type: string, noun: string) => {
+    if (type === 'ESTRUCTURA') return 'Edificio';
+    if (type === 'HECHIZO') return 'Magia';
+    if (['Trasgo', 'Trasgos'].includes(noun)) return 'Trasgo';
+    if (['Dragón', 'Draco'].includes(noun)) return 'Dragón';
+    if (['Elemental', 'Bestia', 'Minotauro', 'Basilisco', 'Quimera', 'Fénix', 'Grifo', 'Búho'].includes(noun)) return noun;
+    return 'Guerrero';
+  };
+
+  // Generate 360 unique cards to reach 400 (base index 41 to 400)
+  for (let i = 41; i <= 400; i++) {
+    const faction = i % 2 === 0 ? 'FURIA' : 'ARCANO';
+    const type = cardTypes[(i + 1) % cardTypes.length];
+    const rarity = rarities[i % rarities.length];
+
+    let name = '';
+    let noun = '';
+    let adj = '';
+    if (faction === 'FURIA') {
+      adj = furiaAdjectives[(i * 3) % furiaAdjectives.length];
+      if (type === 'UNIDAD') {
+        noun = furiaNounsUnits[(i * 7) % furiaNounsUnits.length];
+        name = `${noun} ${adj}`;
+      } else if (type === 'ESTRUCTURA') {
+        noun = furiaNounsStructs[(i * 7) % furiaNounsStructs.length];
+        name = `${noun} ${adj}`;
+      } else {
+        noun = furiaNounsSpells[(i * 7) % furiaNounsSpells.length];
+        name = `${noun} ${adj}`;
+      }
+    } else {
+      adj = arcanoAdjectives[(i * 3) % arcanoAdjectives.length];
+      if (type === 'UNIDAD') {
+        noun = arcanoNounsUnits[(i * 7) % arcanoNounsUnits.length];
+        name = `${noun} ${adj}`;
+      } else if (type === 'ESTRUCTURA') {
+        noun = arcanoNounsStructs[(i * 7) % arcanoNounsStructs.length];
+        name = `${noun} ${adj}`;
+      } else {
+        noun = arcanoNounsSpells[(i * 7) % arcanoNounsSpells.length];
+        name = `${noun} ${adj}`;
+      }
+    }
+
+    const totalCost = (i % 6) + 1; // 1 to 6
+    const factionCost = Math.min(totalCost, (i % 2) + 1);
+    const genericCost = totalCost - factionCost;
+    const cost = {
+      generic: genericCost,
+      [faction.toLowerCase()]: factionCost
+    } as any;
+
+    let attack: number | undefined;
+    let maxHealth: number | undefined;
+    let range: number | undefined;
+    let movement: number | undefined;
+
+    if (type === 'UNIDAD') {
+      attack = Math.max(1, Math.round(totalCost * 0.8 + (i % 2)));
+      maxHealth = Math.max(1, Math.round(totalCost * 1.1 - (i % 2)));
+      range = totalCost > 3 && i % 3 === 0 ? 2 : 1;
+      movement = i % 2 === 0 ? 1 : 2;
+    } else if (type === 'ESTRUCTURA') {
+      maxHealth = Math.max(2, totalCost * 2);
+      range = 1;
+      movement = 0;
+    } else {
+      range = 3;
+      movement = 0;
+    }
+
+    let rulesText = '';
+    if (type === 'UNIDAD') {
+      const rules = [
+        'Carga (Puede moverse y atacar inmediatamente al ser invocado).',
+        'Grito de Batalla: Inflige 1 de daño a una unidad adyacente.',
+        'Último Aliento: Otorga +1 de ataque a tus aliados adyacentes.',
+        'Escudo Divino (Ignora el primer daño recibido).',
+        'Fin de turno: Se inflige 1 punto de daño a sí mismo.',
+        'Inmune a Hechizos.',
+        'Movimiento Diagonal.',
+        'Esta criatura puede atacar dos veces por turno.'
+      ];
+      rulesText = rules[i % rules.length];
+    } else if (type === 'ESTRUCTURA') {
+      const rules = [
+        'Fin del turno: Cura 1 de salud al Comandante aliado.',
+        'Tus unidades en la misma fila ganan +1 de ataque.',
+        'Tus unidades adyacentes ganan +2 de vida máxima.',
+        'Las unidades enemigas adyacentes tienen -1 de movimiento.',
+        'Al comienzo de tu turno, genera 1 fuente de maná temporal.'
+      ];
+      rulesText = rules[i % rules.length];
+    } else {
+      const rules = [
+        'Inflige 2 puntos de daño a la unidad seleccionada.',
+        'Congela a una unidad enemiga por 1 turno y roba 1 carta.',
+        'Regresa una criatura aliada o enemiga a la mano de su dueño.',
+        'Otorga +2/+2 a una unidad aliada elegida.',
+        'Daño masivo: Inflige 1 de daño a todas las unidades en juego.'
+      ];
+      rulesText = rules[i % rules.length];
+    }
+
+    const artist = artists[(i * 3) % artists.length];
+    const artistStyle = styles[(i * 7) % styles.length];
+    const id = `gen-${faction.toLowerCase()}-${i}`;
+    
+    // Dynamically generate the SVG illustration for this specific card
+    let artPath = getSvgIllustration({ id, name, faction, type, subtype: getSubtype(type, noun), rarity, artistStyle });
+
+    // Override with high-fidelity generated assets if names match
+    if (name === 'Mago Celestial' || name === 'Mago Rúnico') {
+      artPath = '/assets/cards/art/mago-celestial.png';
+    } else if (name === 'Guerrero Carmesí' || name === 'Guerrero Ígneo') {
+      artPath = '/assets/cards/art/guerrero-igneo.png';
+    }
+
+    CARDS_DB[id] = {
+      id,
+      name,
+      faction,
+      type,
+      subtype: getSubtype(type, noun),
+      cost,
+      rarity,
+      rulesText,
+      flavorText: `«En los anales del Nexo, la leyenda de esta carta relata cómo el destino del mundo cambió debido a su poder.» — Crónicas del Nexo, Vol. ${i}`,
+      cardNumber: i,
+      artPath,
+      range,
+      movement,
+      artist,
+      artistStyle,
+      ...(attack !== undefined ? { attack } : {}),
+      ...(maxHealth !== undefined ? { maxHealth } : {}),
+    };
+  }
+}
+
+// Generate the remaining 360 cards immediately
+generateRemainingCards();
+
+export function getPreconstructedDeck(factionOrTheme: string): Card[] {
+  const deck: Card[] = [];
+  
+  if (factionOrTheme === 'FURIA_AGRO') {
+    // 18 Furia Mana
+    for (let i = 0; i < 18; i++) deck.push({ ...CARDS_DB['fuente-furia'] });
+    const base = [
+      { id: 'sabueso-brasa', count: 4 },
+      { id: 'berserker-ignivoro', count: 4 },
+      { id: 'guerrero-ceniza', count: 4 },
+      { id: 'trasgo-piroclastico', count: 4 },
+    ];
+    base.forEach(item => {
+      for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
+    });
+    // Fill with generated low-cost Furia cards
+    const genFuriaAgro = Object.values(CARDS_DB).filter(c => 
+      c.id.startsWith('gen-furia-') && 
+      c.type === 'UNIDAD' && 
+      ((c.cost.generic || 0) + (c.cost.furia || 0)) <= 3
+    );
+    for (let i = 0; i < 16; i++) {
+      const card = genFuriaAgro[i % genFuriaAgro.length];
+      deck.push({ ...card });
+    }
+  } else if (factionOrTheme === 'FURIA_CONTROL') {
+    // 22 Furia Mana
+    for (let i = 0; i < 22; i++) deck.push({ ...CARDS_DB['fuente-furia'] });
+    const base = [
+      { id: 'dragon-caldera', count: 2 },
+      { id: 'golem-fundicion', count: 3 },
+      { id: 'draco-magma', count: 3 },
+      { id: 'muro-pomez', count: 2 },
+      { id: 'lluvia-ceniza', count: 2 },
+    ];
+    base.forEach(item => {
+      for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
+    });
+    // Fill with generated heavy Furia cards
+    const genFuriaHeavy = Object.values(CARDS_DB).filter(c => 
+      c.id.startsWith('gen-furia-') && 
+      ((c.cost.generic || 0) + (c.cost.furia || 0)) >= 4
+    );
+    for (let i = 0; i < 16; i++) {
+      const card = genFuriaHeavy[i % genFuriaHeavy.length];
+      deck.push({ ...card });
+    }
+  } else if (factionOrTheme === 'ARCANO_FREEZE') {
+    // 20 Arcano Mana
+    for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-arcana'] });
+    const base = [
+      { id: 'centinela-cristal', count: 3 },
+      { id: 'tejedora-escarcha', count: 3 },
+      { id: 'golem-glaciar', count: 2 },
+      { id: 'mago-runa-helada', count: 3 },
+      { id: 'prision-glacial', count: 3 },
+    ];
+    base.forEach(item => {
+      for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
+    });
+    // Fill with generated Arcano control/freeze cards
+    const genArcanoControl = Object.values(CARDS_DB).filter(c => 
+      c.id.startsWith('gen-arcano-') && 
+      (c.rulesText.includes('Congela') || c.rulesText.includes('congelar') || c.type === 'ESTRUCTURA' || c.type === 'UNIDAD')
+    );
+    for (let i = 0; i < 16; i++) {
+      const card = genArcanoControl[i % genArcanoControl.length];
+      deck.push({ ...card });
+    }
+  } else if (factionOrTheme === 'ARCANO_SPELL') {
+    // 20 Arcano Mana
+    for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-arcana'] });
+    const base = [
+      { id: 'aprendiz-nexo', count: 3 },
+      { id: 'buho-runico', count: 3 },
+      { id: 'tejedora-tiempo', count: 3 },
+      { id: 'vortice-mana', count: 3 },
+      { id: 'cometa-arcano', count: 2 },
+    ];
+    base.forEach(item => {
+      for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
+    });
+    // Fill with generated Arcano spells
+    const genArcanoSpells = Object.values(CARDS_DB).filter(c => 
+      c.id.startsWith('gen-arcano-') && c.type === 'HECHIZO'
+    );
+    for (let i = 0; i < 16; i++) {
+      const card = genArcanoSpells[i % genArcanoSpells.length];
+      deck.push({ ...card });
+    }
+  } else if (factionOrTheme === 'FURIA') {
+    // Default Furia composition
+    for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-furia'] });
+    const composition = [
+      { id: 'sabueso-brasa', count: 3 },
+      { id: 'berserker-ignivoro', count: 3 },
+      { id: 'lluvia-ceniza', count: 2 },
+      { id: 'forja-carmesi', count: 2 },
+      { id: 'chispa-fugaz', count: 2 },
+      { id: 'infiltrado-volcanico', count: 2 },
+      { id: 'elemental-lava', count: 2 },
+      { id: 'muro-pomez', count: 2 },
+      { id: 'dragon-caldera', count: 1 },
+      { id: 'guerrero-ceniza', count: 3 },
+      { id: 'fenix-renacido', count: 2 },
+      { id: 'draco-magma', count: 2 },
+      { id: 'trasgo-piroclastico', count: 2 },
+      { id: 'golem-fundicion', count: 2 }
+    ];
+    composition.forEach(item => {
+      for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
+    });
+  } else {
+    // Default Arcano composition
+    for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-arcana'] });
+    const composition = [
+      { id: 'centinela-cristal', count: 3 },
+      { id: 'tejedora-escarcha', count: 2 },
+      { id: 'prision-glacial', count: 2 },
+      { id: 'cometa-arcano', count: 2 },
+      { id: 'torre-horizonte', count: 2 },
+      { id: 'aprendiz-nexo', count: 2 },
+      { id: 'barrera-hielo', count: 2 },
+      { id: 'vortice-mana', count: 2 },
+      { id: 'golem-glaciar', count: 1 },
+      { id: 'buho-runico', count: 3 },
+      { id: 'elemental-tormenta', count: 2 },
+      { id: 'avatar-cosmos', count: 1 },
+      { id: 'tejedora-tiempo', count: 3 },
+      { id: 'mago-runa-helada', count: 3 }
+    ];
+    composition.forEach(item => {
+      for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
+    });
+  }
+
+  return deck;
+}

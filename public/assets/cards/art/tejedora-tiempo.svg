@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <rect width="400" height="400" fill="#050811" />
+  
+  <!-- Clock ticks/rune rings -->
+  <circle cx="200" cy="200" r="140" fill="none" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="10 20" opacity="0.3" />
+  <circle cx="200" cy="200" r="110" fill="none" stroke="#a5b4fc" stroke-width="1.2" stroke-dasharray="4 8" opacity="0.4" />
+  
+  <!-- Hands of clock -->
+  <line x1="200" y1="200" x2="200" y2="100" stroke="#00e5ff" stroke-width="3" stroke-linecap="round" />
+  <line x1="200" y1="200" x2="270" y2="230" stroke="#00d9ff" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Wizard hands casting -->
+  <g transform="translate(150, 150)">
+    <circle cx="50" cy="50" r="30" fill="#0d1830" stroke="#00e5ff" stroke-width="2" />
+    <circle cx="50" cy="50" r="10" fill="#ffffff" filter="blur(2px)" />
+  </g>
+</svg>

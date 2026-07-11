@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Academy dark interior -->
+  <rect width="400" height="400" fill="#050814" />
+  
+  <!-- Glowing book/scroll background light -->
+  <circle cx="200" cy="220" r="80" fill="#00e5ff" filter="blur(30px)" opacity="0.45" />
+
+  <!-- Apprentice body silhouette -->
+  <g transform="translate(130, 80)">
+    <!-- Robe -->
+    <path d="M 30,130 L 110,130 L 125,230 L 15,230 Z" fill="#0e172e" stroke="#00e5ff" stroke-width="1.5" />
+    
+    <!-- Hood/Head -->
+    <path d="M 45,100 C 45,60 95,60 95,100 L 85,115 L 55,115 Z" fill="#070c18" stroke="#00d9ff" stroke-width="2" />
+    <!-- Beard or hair -->
+    <polygon points="55,110 85,110 70,140" fill="#cbd5e1" />
+
+    <!-- Glowing scroll held in hands -->
+    <g transform="translate(25, 140)">
+      <rect x="0" y="0" width="90" height="20" rx="3" fill="#ffffff" stroke="#00e5ff" stroke-width="2" />
+      <line x1="15" y1="10" x2="75" y2="10" stroke="#00d9ff" stroke-width="1.5" stroke-dasharray="4 4" />
+    </g>
+  </g>
+</svg>

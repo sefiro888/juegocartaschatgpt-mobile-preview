@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Sky -->
+  <rect width="400" height="400" fill="#1f0907" />
+  <rect width="400" height="400" fill="url(#ash-sky-grad)" opacity="0.5" />
+
+  <!-- Charred wasteland background -->
+  <path d="M 0,340 Q 120,320 200,350 Q 280,380 400,340 L 400,400 L 0,400 Z" fill="#080302" />
+
+  <!-- Fire explosions on ground -->
+  <circle cx="80" cy="350" r="25" fill="#ff3300" filter="blur(10px)" />
+  <circle cx="280" cy="370" r="35" fill="#ff6600" filter="blur(15px)" />
+
+  <!-- Meteor 1 (Main focal point) -->
+  <g transform="translate(180, 100) rotate(135)">
+    <!-- Fire tail -->
+    <path d="M 0,0 C -30,60 -10,180 -15,220 C 15,180 30,60 0,0 Z" fill="url(#fire-tail-grad)" filter="blur(2px)" />
+    <!-- Glowing core -->
+    <circle cx="-5" cy="40" r="18" fill="#e63c00" stroke="#ffaa00" stroke-width="2" />
+    <circle cx="-5" cy="40" r="10" fill="#ffea00" />
+    <!-- Cracks/Sparks -->
+    <circle cx="-25" cy="120" r="3" fill="#ff6600" />
+    <circle cx="-5" cy="160" r="1.5" fill="#ff9900" />
+    <circle cx="15" cy="140" r="2.5" fill="#ffcc00" />
+  </g>
+
+  <!-- Meteor 2 -->
+  <g transform="translate(60, 40) rotate(135)">
+    <path d="M 0,0 C -15,40 -5,120 -8,150 C 8,120 15,40 0,0 Z" fill="url(#fire-tail-grad)" filter="blur(3px)" />
+    <circle cx="-3" cy="25" r="10" fill="#e63c00" />
+    <circle cx="-3" cy="25" r="5" fill="#ffea00" />
+  </g>
+
+  <!-- Meteor 3 -->
+  <g transform="translate(300, 30) rotate(130)">
+    <path d="M 0,0 C -15,30 -5,90 -8,110 C 8,90 15,30 0,0 Z" fill="url(#fire-tail-grad)" filter="blur(2px)" stroke="#ffaa00" stroke-width="0.5" />
+    <circle cx="-3" cy="20" r="8" fill="#e63c00" />
+    <circle cx="-3" cy="20" r="4" fill="#ffcc00" />
+  </g>
+
+  <defs>
+    <linearGradient id="ash-sky-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff3300" />
+      <stop offset="100%" stop-color="#1f0907" />
+    </linearGradient>
+    <linearGradient id="fire-tail-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffea00" stop-opacity="0.8" />
+      <stop offset="40%" stop-color="#ff3c00" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#3c0c05" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+</svg>

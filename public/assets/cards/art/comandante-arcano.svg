@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Wizard library cosmic background -->
+  <rect width="400" height="400" fill="#040711" />
+  <circle cx="200" cy="180" r="160" fill="url(#wizard-cosmos)" opacity="0.45" />
+
+  <!-- White marble columns on side -->
+  <rect x="0" y="0" width="30" height="400" fill="#141829" />
+  <rect x="10" y="0" width="5" height="400" fill="#29304a" />
+  
+  <rect x="370" y="0" width="30" height="400" fill="#141829" />
+  <rect x="385" y="0" width="5" height="400" fill="#29304a" />
+
+  <!-- Floor -->
+  <rect x="30" y="340" width="340" height="60" fill="#080b18" />
+  <line x1="30" y1="340" x2="370" y2="340" stroke="#00d9ff" stroke-width="1.5" />
+
+  <!-- Levitating wizard silhouette -->
+  <g transform="translate(120, 60)">
+    <!-- Magic glow of the spellbook -->
+    <circle cx="80" cy="190" r="45" fill="#00e5ff" filter="blur(20px)" opacity="0.8" />
+
+    <!-- Robes (levitating body) -->
+    <path d="M 40,150 L 120,150 L 140,260 L 20,260 Z" fill="#0c1328" stroke="#00d9ff" stroke-width="1.5" />
+    <path d="M 60,150 L 100,150 L 115,260 L 45,260 Z" fill="#152042" />
+
+    <!-- Hood and beard -->
+    <!-- Beard (white) -->
+    <polygon points="65,115 95,115 80,170" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1" />
+    <!-- Hood (deep blue) -->
+    <path d="M 50,110 C 50,60 110,60 110,110 L 95,125 L 65,125 Z" fill="#060b18" stroke="#00e5ff" stroke-width="2" />
+    
+    <!-- Face shadow -->
+    <polygon points="65,105 95,105 80,120" fill="#020307" />
+    <!-- Glowing eyes slits -->
+    <polygon points="72,110 78,111 75,114" fill="#00e5ff" />
+    <polygon points="88,110 82,111 85,114" fill="#00e5ff" />
+
+    <!-- Levitating spellbook (held in front) -->
+    <g transform="translate(45, 170)">
+      <!-- Book spine/back -->
+      <rect x="10" y="5" width="50" height="25" rx="3" fill="#2e1a47" stroke="#8b5cf6" stroke-width="1.5" />
+      <!-- Book pages (glowing) -->
+      <polygon points="15,7 35,12 35,22 15,17" fill="#ffffff" />
+      <polygon points="55,7 35,12 35,22 55,17" fill="#ffffff" />
+      <!-- Small magical runes floating from book -->
+      <path d="M 12,0 L 15,3 L 18,0 M 45,-10 L 49,-6 L 53,-10" stroke="#00e5ff" stroke-width="1" fill="none" />
+    </g>
+  </g>
+
+  <!-- Giant floating rune rings in background -->
+  <ellipse cx="200" cy="170" rx="100" ry="100" fill="none" stroke="#00d9ff" stroke-width="1" stroke-dasharray="10 15" opacity="0.3" />
+
+  <defs>
+    <radialGradient id="wizard-cosmos" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#4338ca" />
+      <stop offset="65%" stop-color="#0b1026" />
+      <stop offset="100%" stop-color="#040711" />
+    </radialGradient>
+  </defs>
+</svg>

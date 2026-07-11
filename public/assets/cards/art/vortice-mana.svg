@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Outer cosmos -->
+  <rect width="400" height="400" fill="#02030a" />
+
+  <!-- Swirling spiral background -->
+  <circle cx="200" cy="200" r="160" fill="url(#vortex-radial)" opacity="0.4" />
+
+  <!-- Spiral rings -->
+  <path d="M 200,200 A 30,30 0 1,0 230,230 A 60,60 0 1,0 140,140 A 100,100 0 1,0 300,300" fill="none" stroke="#00e5ff" stroke-width="6" stroke-linecap="round" filter="blur(1px)" />
+  <path d="M 200,200 A 20,20 0 1,0 220,220 A 45,45 0 1,0 155,155 A 80,80 0 1,0 280,280" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Tiny sparks in vortex -->
+  <circle cx="160" cy="180" r="3" fill="#00e5ff" />
+  <circle cx="240" cy="220" r="2.5" fill="#fff" />
+  <circle cx="210" cy="130" r="4" fill="#00e5ff" />
+  <circle cx="180" cy="270" r="2" fill="#fff" />
+
+  <defs>
+    <radialGradient id="vortex-radial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#00d9ff" />
+      <stop offset="70%" stop-color="#312e81" />
+      <stop offset="100%" stop-color="#02030a" />
+    </radialGradient>
+  </defs>
+</svg>

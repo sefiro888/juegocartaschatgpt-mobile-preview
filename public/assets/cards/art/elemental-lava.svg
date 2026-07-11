@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <rect width="400" height="400" fill="#140606" />
+  <circle cx="200" cy="200" r="160" fill="url(#magma-radial)" opacity="0.4" />
+
+  <!-- Lava floor -->
+  <polygon points="0,400 0,330 400,310 400,400" fill="#cc2400" />
+  <polygon points="0,400 0,350 400,340 400,400" fill="#ff7700" opacity="0.8" />
+
+  <!-- Magma Monster Shape -->
+  <g transform="translate(90, 80)">
+    <!-- Body -->
+    <path d="M 60,80 L 160,80 L 180,180 L 40,180 Z" fill="#240c0a" stroke="#ff3e3e" stroke-width="3" />
+    <path d="M 80,90 Q 110,120 140,90 L 150,170 Q 110,150 70,170 Z" fill="#401410" />
+
+    <!-- Magma veins inside torso -->
+    <path d="M 100,100 Q 90,130 110,160 M 120,100 Q 130,130 110,160" stroke="#ff9900" stroke-width="4" stroke-linecap="round" fill="none" />
+    
+    <!-- Outstretched Arm Left -->
+    <polygon points="50,90 -20,60 10,110" fill="#1d0908" stroke="#ff3e3e" stroke-width="2" />
+    
+    <!-- Outstretched Arm Right -->
+    <polygon points="170,90 240,60 210,110" fill="#1d0908" stroke="#ff3e3e" stroke-width="2" />
+
+    <!-- Head -->
+    <polygon points="90,70 130,70 140,40 80,40" fill="#140606" stroke="#ff3e3e" stroke-width="2" />
+    <circle cx="100" cy="55" r="4" fill="#ffffff" />
+    <circle cx="120" cy="55" r="4" fill="#ffffff" />
+  </g>
+
+  <defs>
+    <radialGradient id="magma-radial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff3c00" />
+      <stop offset="100%" stop-color="#140606" />
+    </radialGradient>
+  </defs>
+</svg>

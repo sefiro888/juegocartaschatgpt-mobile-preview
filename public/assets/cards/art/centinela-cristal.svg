@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Frozen tundra sky -->
+  <rect width="400" height="400" fill="#08101f" />
+  <circle cx="200" cy="200" r="170" fill="url(#arcane-radial)" opacity="0.35" />
+
+  <!-- Snow ground and glaciers -->
+  <polygon points="0,320 150,290 280,330 400,280 400,400 0,400" fill="#f1f5f9" />
+  <!-- Shaded snow details -->
+  <polygon points="0,320 150,290 200,340 0,350" fill="#cbd5e1" opacity="0.6" />
+  <polygon points="180,310 280,330 400,280 320,350" fill="#94a3b8" opacity="0.4" />
+
+  <!-- Crystal Golem in center -->
+  <g transform="translate(130, 90)">
+    <!-- Arcane core glowing underneath -->
+    <circle cx="70" cy="110" r="40" fill="#00d9ff" filter="blur(20px)" opacity="0.8" />
+    <circle cx="70" cy="110" r="15" fill="#ffffff" filter="blur(4px)" opacity="0.9" />
+
+    <!-- Sharp Crystal Shoulder (left) -->
+    <polygon points="10,80 -20,40 20,60" fill="#006680" stroke="#00d9ff" stroke-width="2" />
+    <polygon points="-20,40 10,80 0,100" fill="#00a3cc" stroke="#e0f7fa" stroke-width="1" />
+    
+    <!-- Sharp Crystal Shoulder (right) -->
+    <polygon points="130,80 160,40 120,60" fill="#006680" stroke="#00d9ff" stroke-width="2" />
+    <polygon points="160,40 130,80 140,100" fill="#00a3cc" stroke="#e0f7fa" stroke-width="1" />
+
+    <!-- Torso / Chest Plates -->
+    <polygon points="20,70 120,70 140,120 70,160 0,120" fill="#03253b" stroke="#00d9ff" stroke-width="2" />
+    <!-- Light reflection facet -->
+    <polygon points="70,70 120,70 140,120 70,110" fill="#004d61" opacity="0.8" />
+    <polygon points="20,70 70,70 70,110 0,120" fill="#0080a3" opacity="0.6" />
+
+    <!-- Head Crystal -->
+    <polygon points="70,10 40,55 70,70 100,55" fill="#03253b" stroke="#00d9ff" stroke-width="2" />
+    <!-- Glowing eyes slits -->
+    <polygon points="58,45 68,48 64,52" fill="#ffffff" />
+    <polygon points="82,45 72,48 76,52" fill="#ffffff" />
+  </g>
+
+  <!-- Small floating arcane runes/particles -->
+  <polygon points="80,140 85,130 90,140 85,150" fill="#00d9ff" opacity="0.8" />
+  <polygon points="310,120 315,110 320,120 315,130" fill="#00d9ff" opacity="0.6" />
+  <circle cx="290" cy="180" r="3" fill="#ffffff" filter="blur(1px)" />
+
+  <defs>
+    <radialGradient id="arcane-radial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00d9ff" />
+      <stop offset="60%" stop-color="#03253b" />
+      <stop offset="100%" stop-color="#08101f" />
+    </radialGradient>
+  </defs>
+</svg>
