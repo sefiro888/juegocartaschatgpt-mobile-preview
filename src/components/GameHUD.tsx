@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { CardDOM } from './CardDOM';
 import { CARDS_DB } from '../core/cardsDb';
@@ -74,6 +74,7 @@ interface GameHUDProps {
 
 export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const [boardRecoveryVersion, setBoardRecoveryVersion] = useState(0);
+  const stateRecoveryAttempted = useRef(false);
   const {
     gameState,
     selectedCardInHand,
@@ -87,12 +88,15 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     playMana,
     endActiveTurn,
     startNewGame,
+    joinOnlineGame,
     leaveOnlineGame,
     isAIThinking,
     soundEnabled,
     toggleSound,
     localController,
     onlineSession,
+    onlineError,
+    isOnlineLoading,
   } = useGameStore();
 
   const isEntityVisibleInHUD = (entity: BoardEntity) => {
@@ -115,6 +119,14 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const isPlayerTurn = activePlayer === localController;
 
   useEffect(() => {
+    if (gameState || stateRecoveryAttempted.current) return;
+    const roomCode = new URLSearchParams(window.location.search).get('sala')?.trim().toUpperCase();
+    if (!roomCode || roomCode.length !== 6) return;
+    stateRecoveryAttempted.current = true;
+    void joinOnlineGame(roomCode).catch(() => undefined);
+  }, [gameState, joinOnlineGame]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       if (event.key === 'Escape') {
@@ -134,7 +146,57 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [endActiveTurn, inspectedCard, isAIThinking, isPlayerTurn, selectCardInHand, selectEntity, setInspectedCard]);
 
-  if (!gameState) return null;
+  if (!gameState) {
+    return (
+      <div className="game-state-recovery" role="status">
+        <span className="game-state-recovery-spinner" />
+        <strong>Recuperando la partida</strong>
+        <p>{onlineError ?? 'Reconectando con el estado compartido del santuario.'}</p>
+        {onlineError && (
+          <button
+            type="button"
+            onClick={() => {
+              if (onlineSession) void leaveOnlineGame();
+              onQuit?.();
+            }}
+          >
+            Volver al menu
+          </button>
+        )}
+        <style>{`
+          .game-state-recovery {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            color: #eff8ff;
+            background: #050a12;
+          }
+          .game-state-recovery p { margin: 0; color: #9fb5c3; font-size: 0.82rem; }
+          .game-state-recovery-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(124, 211, 255, 0.18);
+            border-top-color: #73d8ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+          .game-state-recovery button {
+            margin-top: 7px;
+            padding: 8px 13px;
+            border: 1px solid rgba(124, 211, 255, 0.42);
+            border-radius: 6px;
+            color: #eefaff;
+            background: #176887;
+            cursor: pointer;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   const { player: playerState, opponent: opponentState, winner } = gameState;
   const player = localController === 'PLAYER' ? playerState : opponentState;
@@ -211,7 +273,13 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             <span className="turn-label">TURNO {turn}</span>
           </div>
           <span className={`phase-tag ${isPlayerTurn ? 'player' : 'opponent'}`}>
-            {isPlayerTurn ? '⚔️ Tu Turno' : onlineSession ? 'Esperando al rival...' : '🤖 IA Pensando...'}
+            {onlineError
+              ? 'Conexion inestable'
+              : onlineSession && isOnlineLoading
+                ? 'Sincronizando...'
+                : isPlayerTurn
+                  ? '⚔️ Tu Turno'
+                  : onlineSession ? 'Esperando al rival...' : '🤖 IA Pensando...'}
           </span>
         </div>
 
@@ -237,6 +305,12 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           </button>
         </div>
       </div>
+
+      {onlineError && (
+        <div className="online-sync-error" role="alert">
+          {onlineError}
+        </div>
+      )}
 
       {/* ═══ CENTER LAYOUT: 3D BOARD & INSPECTOR SIDEBAR ═══ */}
       <div className="game-center-board">
@@ -774,6 +848,24 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           color: var(--color-danger);
           border: 1px solid rgba(239, 68, 68, 0.25);
           animation: glow-pulse 2s infinite;
+        }
+
+        .online-sync-error {
+          position: absolute;
+          z-index: 42;
+          top: 50px;
+          left: 50%;
+          max-width: min(520px, calc(100vw - 40px));
+          padding: 7px 12px;
+          border: 1px solid rgba(255, 145, 118, 0.55);
+          border-radius: 6px;
+          color: #ffe4dc;
+          background: rgba(94, 28, 23, 0.9);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          font-size: 0.72rem;
+          text-align: center;
+          transform: translateX(-50%);
+          pointer-events: none;
         }
 
         /* Opponent mana compact orbs */

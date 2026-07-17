@@ -1,4 +1,7 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CARDS_DB } from '../cardsDb';
 import { getCardArtCandidates, resolvePublicAsset } from '../publicAssets';
 
 describe('public asset paths', () => {
@@ -27,5 +30,14 @@ describe('public asset paths', () => {
       '/juegocartaschatgpt/assets/cards/art/example.png',
       '/juegocartaschatgpt/assets/cards/art/example.svg',
     ]);
+  });
+
+  it('keeps every local card illustration available in the public build', () => {
+    const missingArt = Object.values(CARDS_DB)
+      .map((card) => card.artPath)
+      .filter((artPath): artPath is string => Boolean(artPath) && artPath.startsWith('/'))
+      .filter((artPath) => !existsSync(resolve('public', artPath.replace(/^\/+/, ''))));
+
+    expect(missingArt).toEqual([]);
   });
 });

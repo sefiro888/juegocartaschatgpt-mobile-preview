@@ -7,9 +7,11 @@ import { audioService } from '../core/audio';
 import { getObstacleDefinition } from '../core/obstacleConfig';
 import { isBoardObstacle } from '../core/boardPathfinding';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { createOnlineMatch, getOnlineMatch, joinOnlineMatch, saveOnlineMatchState, subscribeToOnlineMatch, unsubscribeFromOnlineMatch } from '../online/matchService';
-import { getOnlinePlayerId, isSupabaseConfigured } from '../online/supabaseClient';
 import type { OnlineMatchRecord, OnlineSession } from '../online/types';
+import { shouldApplyOnlineRevision } from '../online/syncPolicy';
+
+type MatchService = typeof import('../online/matchService');
+type SupabaseService = typeof import('../online/supabaseClient');
 
 export interface GameEvent {
   id: number;
@@ -22,7 +24,20 @@ let gameEventId = 0;
 let presentationActionId = 0;
 let aiTurnToken = 0;
 let onlineChannel: RealtimeChannel | null = null;
-let onlineSyncTimer: ReturnType<typeof setInterval> | null = null;
+let onlineSyncTimer: number | null = null;
+let onlineNeedsRecovery = false;
+let matchServicePromise: Promise<MatchService> | null = null;
+let supabaseServicePromise: Promise<SupabaseService> | null = null;
+
+const loadMatchService = () => {
+  matchServicePromise ??= import('../online/matchService');
+  return matchServicePromise;
+};
+
+const loadSupabaseService = () => {
+  supabaseServicePromise ??= import('../online/supabaseClient');
+  return supabaseServicePromise;
+};
 
 const initialSoundEnabled = typeof window !== 'undefined'
   && window.localStorage.getItem('nexo-sound-enabled') === 'true';
@@ -64,7 +79,12 @@ function toOnlineSession(match: OnlineMatchRecord, role: 'host' | 'guest'): Onli
 
 function applyOnlineMatch(match: OnlineMatchRecord) {
   const session = useGameStore.getState().onlineSession;
-  if (!session || session.matchId !== match.id || match.revision < session.revision) return;
+  if (
+    !session
+    || session.matchId !== match.id
+    || !shouldApplyOnlineRevision(session.revision, match.revision, onlineNeedsRecovery)
+  ) return;
+  onlineNeedsRecovery = false;
   useGameStore.setState({
     gameState: match.game_state,
     onlineSession: { ...session, revision: match.revision, status: match.status },
@@ -81,11 +101,11 @@ function stopOnlineSync() {
   onlineSyncTimer = null;
 }
 
-function startOnlineSync(match: OnlineMatchRecord) {
+function startOnlineSync(match: OnlineMatchRecord, matchService: MatchService) {
   stopOnlineSync();
-  onlineChannel = subscribeToOnlineMatch(match.id, applyOnlineMatch);
+  onlineChannel = matchService.subscribeToOnlineMatch(match.id, applyOnlineMatch);
   onlineSyncTimer = window.setInterval(() => {
-    void getOnlineMatch(match.room_code)
+    void matchService.getOnlineMatch(match.room_code)
       .then((updatedMatch) => {
         if (updatedMatch) applyOnlineMatch(updatedMatch);
       })
@@ -96,11 +116,22 @@ function startOnlineSync(match: OnlineMatchRecord) {
 async function synchronizeOnlineState(gameState: GameState) {
   const session = useGameStore.getState().onlineSession;
   if (!session) return;
+  useGameStore.setState({ isOnlineLoading: true, onlineError: null });
+  const matchService = await loadMatchService();
   try {
-    applyOnlineMatch(await saveOnlineMatchState(session.matchId, session.revision, gameState));
+    applyOnlineMatch(await matchService.saveOnlineMatchState(session.matchId, session.revision, gameState));
   } catch (error) {
+    onlineNeedsRecovery = true;
+    const message = error instanceof Error ? error.message : 'No se pudo sincronizar la partida.';
+    try {
+      const latestMatch = await matchService.getOnlineMatch(session.roomCode);
+      if (latestMatch) applyOnlineMatch(latestMatch);
+    } catch {
+      // The polling fallback will recover the latest state when connectivity returns.
+    }
     useGameStore.setState({
-      onlineError: error instanceof Error ? error.message : 'No se pudo sincronizar la partida.',
+      isOnlineLoading: false,
+      onlineError: `${message} Recuperando el estado compartido.`,
     });
   }
 }
@@ -197,8 +228,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startNewGame: (playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string) => {
     aiTurnToken++;
+    onlineNeedsRecovery = false;
     stopOnlineSync();
-    void unsubscribeFromOnlineMatch(onlineChannel);
+    const previousOnlineChannel = onlineChannel;
+    if (previousOnlineChannel) {
+      void loadMatchService().then((matchService) => matchService.unsubscribeFromOnlineMatch(previousOnlineChannel));
+    }
     onlineChannel = null;
     const playerDeck = getPreconstructedDeck(deckTheme || playerFaction);
     const opponentFaction = playerFaction === 'FURIA' ? 'ARCANO' : 'FURIA';
@@ -234,14 +269,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   createOnlineGame: async (playerFaction, deckTheme) => {
-    if (!isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
     aiTurnToken++;
     set({ isOnlineLoading: true, onlineError: null });
     try {
-      const playerId = await getOnlinePlayerId();
+      const [matchService, supabaseService] = await Promise.all([loadMatchService(), loadSupabaseService()]);
+      if (!supabaseService.isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
+      const playerId = await supabaseService.getOnlinePlayerId();
       const gameState = createOnlineGameState(playerFaction, deckTheme);
-      const match = await createOnlineMatch(playerId, gameState);
-      await unsubscribeFromOnlineMatch(onlineChannel);
+      const match = await matchService.createOnlineMatch(playerId, gameState);
+      await matchService.unsubscribeFromOnlineMatch(onlineChannel);
       set({
         gameState,
         selectedCardInHand: null,
@@ -257,7 +293,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         onlineError: null,
         isOnlineLoading: false,
       });
-      startOnlineSync(match);
+      startOnlineSync(match, matchService);
       return match.room_code;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo crear la sala online.';
@@ -267,19 +303,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   joinOnlineGame: async (roomCode) => {
-    if (!isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
     aiTurnToken++;
     set({ isOnlineLoading: true, onlineError: null });
     try {
-      const playerId = await getOnlinePlayerId();
-      const foundMatch = await getOnlineMatch(roomCode);
+      const [matchService, supabaseService] = await Promise.all([loadMatchService(), loadSupabaseService()]);
+      if (!supabaseService.isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
+      const playerId = await supabaseService.getOnlinePlayerId();
+      const foundMatch = await matchService.getOnlineMatch(roomCode);
       if (!foundMatch) throw new Error('No existe una sala con ese codigo.');
       const role = foundMatch.host_id === playerId ? 'host' : 'guest';
       const match = role === 'guest' && foundMatch.guest_id !== playerId
-        ? await joinOnlineMatch(foundMatch, playerId)
+        ? await matchService.joinOnlineMatch(foundMatch, playerId)
         : foundMatch;
 
-      await unsubscribeFromOnlineMatch(onlineChannel);
+      await matchService.unsubscribeFromOnlineMatch(onlineChannel);
       set({
         gameState: match.game_state,
         selectedCardInHand: null,
@@ -295,7 +332,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         onlineError: null,
         isOnlineLoading: false,
       });
-      startOnlineSync(match);
+      startOnlineSync(match, matchService);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo unir a la sala.';
       set({ isOnlineLoading: false, onlineError: message });
@@ -304,8 +341,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   leaveOnlineGame: async () => {
+    onlineNeedsRecovery = false;
     stopOnlineSync();
-    await unsubscribeFromOnlineMatch(onlineChannel);
+    if (onlineChannel) {
+      const matchService = await loadMatchService();
+      await matchService.unsubscribeFromOnlineMatch(onlineChannel);
+    }
     onlineChannel = null;
     set({ onlineSession: null, onlineError: null, isOnlineLoading: false, localController: 'PLAYER' });
   },
@@ -336,8 +377,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   playMana: (cardId) => {
-    const { gameState, isAIThinking, localController, onlineSession } = get();
-    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
+    const { gameState, isAIThinking, isOnlineLoading, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking || (onlineSession && isOnlineLoading)) return;
 
     audioService.playHover();
     const card = CARDS_DB[cardId];
@@ -351,8 +392,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   summon: (cardId, pos, battlecryTarget) => {
-    const { gameState, isAIThinking, localController, onlineSession } = get();
-    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
+    const { gameState, isAIThinking, isOnlineLoading, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking || (onlineSession && isOnlineLoading)) return;
 
     audioService.playSummonSlam();
     const card = CARDS_DB[cardId];
@@ -366,8 +407,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   move: (from, to) => {
-    const { gameState, isAIThinking, localController, onlineSession } = get();
-    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
+    const { gameState, isAIThinking, isOnlineLoading, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking || (onlineSession && isOnlineLoading)) return;
 
     audioService.playHover();
     const movedEntity = gameState.board[`${from.x},${from.y}`];
@@ -385,8 +426,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   attack: (attackerPos, targetPos) => {
-    const { gameState, isAIThinking, localController, onlineSession } = get();
-    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
+    const { gameState, isAIThinking, isOnlineLoading, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking || (onlineSession && isOnlineLoading)) return;
 
     audioService.playClash();
     const attacker = gameState.board[`${attackerPos.x},${attackerPos.y}`];
@@ -410,8 +451,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   castSpell: (cardId, targetPos) => {
-    const { gameState, isAIThinking, localController, onlineSession } = get();
-    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
+    const { gameState, isAIThinking, isOnlineLoading, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking || (onlineSession && isOnlineLoading)) return;
 
     // Check if the spell is ice/freeze themed
     if (cardId.includes('congelacion') || cardId.includes('prision') || cardId.includes('tormenta') || cardId.includes('escarcha')) {
@@ -438,8 +479,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   endActiveTurn: () => {
-    const { gameState, isAIThinking, localController, onlineSession } = get();
-    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
+    const { gameState, isAIThinking, isOnlineLoading, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking || (onlineSession && isOnlineLoading)) return;
 
     // Play chime sound
     audioService.playTurnChange();

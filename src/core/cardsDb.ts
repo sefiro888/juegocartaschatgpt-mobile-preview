@@ -13,7 +13,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Genera 1 de maná de Furia. (Límite de 1 maná jugado por turno)',
     flavorText: '«El latido ígneo de la tierra misma no se puede apagar; fluye silencioso bajo el nexo esperando la chispa que lo libere.» — Leyenda del Cataclismo',
     cardNumber: 1,
-    artPath: '/assets/cards/art/fuente-furia.png',
+    artPath: '/assets/cards/art/fuente-furia.webp',
     range: 1,
     movement: 0,
     artist: 'Ignis Fatuus',
@@ -233,7 +233,7 @@ export const CARDS_DB: Record<string, Card> = {
     attack: 3,
     maxHealth: 2,
     cardNumber: 25,
-    artPath: '/assets/cards/art/guerrero-ceniza.png',
+    artPath: '/assets/cards/art/guerrero-ceniza.webp',
     range: 1,
     movement: 1,
     artist: 'Kaelen Vane',
@@ -290,7 +290,7 @@ export const CARDS_DB: Record<string, Card> = {
     attack: 2,
     maxHealth: 1,
     cardNumber: 28,
-    artPath: '/assets/cards/art/trasgo-piroclastico.png',
+    artPath: '/assets/cards/art/trasgo-piroclastico.webp',
     range: 1,
     movement: 2,
     artist: 'Brutus Clay',
@@ -326,7 +326,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Otorga +3/+0 y Carga a una unidad aliada este turno.',
     flavorText: '«La rabia del Nexo desatada en un solo golpe. Una fuerza tan destructiva que consume los músculos y el alma del portador en minutos.»',
     cardNumber: 30,
-    artPath: '/assets/cards/art/furia-nexo.png',
+    artPath: '/assets/cards/art/furia-nexo.webp',
     range: 1,
     movement: 0,
     artist: 'Aria Star',
@@ -343,7 +343,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Inflige 2 de daño a todas las unidades en el tablero.',
     flavorText: '«La ira del volcán consume a justos y pecadores por igual. Cuando la tierra ruge, no hay escudo que aguante la marea de fuego.» — Crónicas del Domo',
     cardNumber: 31,
-    artPath: '/assets/cards/art/erupcion-volcanica.png',
+    artPath: '/assets/cards/art/erupcion-volcanica.webp',
     range: 5,
     movement: 0,
     artist: 'Valerius',
@@ -361,7 +361,7 @@ export const CARDS_DB: Record<string, Card> = {
     flavorText: 'Una columna de fuego constante que calcina la retaguardia enemiga. Los soldados aprenden rápido a evitar su línea de visión abrasadora.',
     maxHealth: 5,
     cardNumber: 32,
-    artPath: '/assets/cards/art/pilar-fuego.png',
+    artPath: '/assets/cards/art/pilar-fuego.webp',
     range: 4,
     movement: 0,
     artist: 'PixelLord',
@@ -380,7 +380,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Genera 1 de maná de Arcano. (Límite de 1 maná jugado por turno)',
     flavorText: '«La corriente fría de la energía pura y silenciosa que sostiene el Domo. Es el fluir del cosmos que pacifica el alma.» — Aethelgard',
     cardNumber: 13,
-    artPath: '/assets/cards/art/fuente-arcana.png',
+    artPath: '/assets/cards/art/fuente-arcana.webp',
     range: 1,
     movement: 0,
     artist: 'Lyra Frost',
@@ -489,7 +489,7 @@ export const CARDS_DB: Record<string, Card> = {
     attack: 1,
     maxHealth: 2,
     cardNumber: 19,
-    artPath: '/assets/cards/art/aprendiz-nexo.png',
+    artPath: '/assets/cards/art/aprendiz-nexo.webp',
     range: 1,
     movement: 1,
     artist: 'PixelLord',
@@ -507,7 +507,7 @@ export const CARDS_DB: Record<string, Card> = {
     flavorText: 'Tocarla es quedar atrapado por la escarcha eterna del polo norte. Los atacantes quedan petrificados al instante al tocar el hielo puro.',
     maxHealth: 4,
     cardNumber: 20,
-    artPath: '/assets/cards/art/barrera-hielo.png',
+    artPath: '/assets/cards/art/barrera-hielo.webp',
     range: 1,
     movement: 0,
     artist: 'Brutus Clay',
@@ -524,7 +524,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Congela a una unidad enemiga adyacente a tu Comandante y roba 1 carta.',
     flavorText: '«Un destello cegador que emana del báculo rúnico para aturdir a los agresores más atrevidos.» — Comandante Aethelgard',
     cardNumber: 21,
-    artPath: '/assets/cards/art/destello-runico.png',
+    artPath: '/assets/cards/art/destello-runico.webp',
     range: 2,
     movement: 0,
     artist: 'Aria Star',
@@ -560,7 +560,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Devuelve una unidad del tablero a la mano de su propietario.',
     flavorText: '«La energía del Nexo gira en sentido contrario, deshaciendo la materia y enviando la criatura de vuelta al plano de su invocación.» — Libro de hechizos del Domo',
     cardNumber: 23,
-    artPath: '/assets/cards/art/vortice-mana.png',
+    artPath: '/assets/cards/art/vortice-mana.webp',
     range: 3,
     movement: 0,
     artist: 'Hokusai Runic',
@@ -655,7 +655,7 @@ export const CARDS_DB: Record<string, Card> = {
     attack: 2,
     maxHealth: 2,
     cardNumber: 36,
-    artPath: '/assets/cards/art/tejedora-tiempo.png',
+    artPath: '/assets/cards/art/tejedora-tiempo.webp',
     range: 1,
     movement: 1,
     artist: 'Aria Star',
@@ -674,7 +674,7 @@ export const CARDS_DB: Record<string, Card> = {
     attack: 2,
     maxHealth: 3,
     cardNumber: 37,
-    artPath: '/assets/cards/art/mago-runa-helada.png',
+    artPath: '/assets/cards/art/mago-runa-helada.webp',
     range: 2,
     movement: 1,
     artist: 'Hokusai Runic',
@@ -691,7 +691,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Congela a una unidad enemiga en el tablero. Roba 1 carta.',
     flavorText: '«Un suspiro frío en el aire y el objetivo se detiene rígido, mientras sus pensamientos se vuelven transparentes para el invocador.» — Lección del Domo',
     cardNumber: 38,
-    artPath: '/assets/cards/art/congelacion-rapida.png',
+    artPath: '/assets/cards/art/congelacion-rapida.webp',
     range: 3,
     movement: 0,
     artist: 'PixelLord',
@@ -708,7 +708,7 @@ export const CARDS_DB: Record<string, Card> = {
     rulesText: 'Congela a todas las unidades en la columna seleccionada del tablero.',
     flavorText: 'Una ventisca cósmica que paraliza líneas enteras de infantería enemiga. El frío desciende directamente del Domo, inmovilizando los peones enemigos.',
     cardNumber: 39,
-    artPath: '/assets/cards/art/tormenta-mana.png',
+    artPath: '/assets/cards/art/tormenta-mana.webp',
     range: 3,
     movement: 0,
     artist: 'Valerius',
@@ -726,7 +726,7 @@ export const CARDS_DB: Record<string, Card> = {
     flavorText: '«El nexo del templo sagrado irradia energía protectora al sabio, convirtiendo su báculo en un arma letal y su túnica en un escudo rúnico.»',
     maxHealth: 4,
     cardNumber: 40,
-    artPath: '/assets/cards/art/templo-runico.png',
+    artPath: '/assets/cards/art/templo-runico.webp',
     range: 1,
     movement: 0,
     artist: 'Brutus Clay',
@@ -1163,95 +1163,95 @@ function generateRemainingCards() {
 
     // Override with high-fidelity generated assets if names match
     if (name === 'Mago Celestial' || name === 'Mago Rúnico') {
-      artPath = '/assets/cards/art/mago-celestial.png';
+      artPath = '/assets/cards/art/mago-celestial.webp';
     } else if (name === 'Guerrero Carmesí' || name === 'Guerrero Ígneo') {
-      artPath = '/assets/cards/art/guerrero-igneo.png';
+      artPath = '/assets/cards/art/guerrero-igneo.webp';
     } else if (name.includes('Guardián Escarchado') || name.includes('Guardián Glacial')) {
-      artPath = '/assets/cards/art/guardian-escarchado.png';
+      artPath = '/assets/cards/art/guardian-escarchado.webp';
     } else if (name.includes('Titán Infernal') || name.includes('Titán Volcánico')) {
-      artPath = '/assets/cards/art/titan-infernal.png';
+      artPath = '/assets/cards/art/titan-infernal.webp';
     } else if (name.includes('Dragón') || name.includes('Draco')) {
-      artPath = '/assets/cards/art/dragon-escarcha.png';
+      artPath = '/assets/cards/art/dragon-escarcha.webp';
     } else if (name.includes('Nigromante')) {
-      artPath = '/assets/cards/art/nigromante-oscuro.png';
+      artPath = '/assets/cards/art/nigromante-oscuro.webp';
     } else if (name.includes('Elfo') || name.includes('Dríada')) {
-      artPath = '/assets/cards/art/elfo-ancestral.png';
+      artPath = '/assets/cards/art/elfo-ancestral.webp';
     } else if (name.includes('Vampiro')) {
-      artPath = '/assets/cards/art/vampiro-siniestro.png';
+      artPath = '/assets/cards/art/vampiro-siniestro.webp';
     } else if (name.includes('Paladín') || name.includes('Caballero')) {
-      artPath = '/assets/cards/art/paladin-glorioso.png';
+      artPath = '/assets/cards/art/paladin-glorioso.webp';
     } else if (name.includes('Ángel')) {
-      artPath = '/assets/cards/art/angel-celestial.png';
+      artPath = '/assets/cards/art/angel-celestial.webp';
     } else if (name.includes('Horror') || name.includes('Engendro') || name.includes('Devorador')) {
-      artPath = '/assets/cards/art/horror-abisal.png';
+      artPath = '/assets/cards/art/horror-abisal.webp';
     } else if (name.includes('Lobo')) {
-      artPath = '/assets/cards/art/lobo-salvaje.png';
+      artPath = '/assets/cards/art/lobo-salvaje.webp';
     } else if (name.includes('Centauro')) {
-      artPath = '/assets/cards/art/centauro-cazador.png';
+      artPath = '/assets/cards/art/centauro-cazador.webp';
     } else if (name.includes('Falla') || name.includes('Grieta')) {
-      artPath = '/assets/cards/art/falla-vacio.png';
+      artPath = '/assets/cards/art/falla-vacio.webp';
     } else if (name.includes('Monumento')) {
-      artPath = '/assets/cards/art/monumento-sagrado.png';
+      artPath = '/assets/cards/art/monumento-sagrado.webp';
     } else if (name.includes('Cripta') || name.includes('Tumba')) {
-      artPath = '/assets/cards/art/cripta-mortal.png';
+      artPath = '/assets/cards/art/cripta-mortal.webp';
     } else if (name.includes('Arboleda') || name.includes('Bosque')) {
-      artPath = '/assets/cards/art/arboleda-sagrada.png';
+      artPath = '/assets/cards/art/arboleda-sagrada.webp';
     } else if (name.includes('Quimera')) {
-      artPath = '/assets/cards/art/quimera-caos.png';
+      artPath = '/assets/cards/art/quimera-caos.webp';
     } else if (name.includes('Maldición')) {
-      artPath = '/assets/cards/art/maldicion-sombra.png';
+      artPath = '/assets/cards/art/maldicion-sombra.webp';
     } else if (name.includes('Crecimiento')) {
-      artPath = '/assets/cards/art/crecimiento-salvaje.png';
+      artPath = '/assets/cards/art/crecimiento-salvaje.webp';
     } else if (name.includes('Aniquilación')) {
-      artPath = '/assets/cards/art/aniquilacion-vacio.png';
+      artPath = '/assets/cards/art/aniquilacion-vacio.webp';
     } else if (name.includes('Juicio')) {
-      artPath = '/assets/cards/art/juicio-divino.png';
+      artPath = '/assets/cards/art/juicio-divino.webp';
     } else if (name.includes('Gigante') || name.includes('Asolador')) {
-      artPath = '/assets/cards/art/gigante-magma.png';
+      artPath = '/assets/cards/art/gigante-magma.webp';
     } else if (name.includes('Golem')) {
-      artPath = '/assets/cards/art/golem-runico.png';
+      artPath = '/assets/cards/art/golem-runico.webp';
     } else if (name.includes('Espectro') || name.includes('Sombra')) {
-      artPath = '/assets/cards/art/espectro-siniestro.png';
+      artPath = '/assets/cards/art/espectro-siniestro.webp';
     } else if (name.includes('Renegado') || name.includes('Esclavo')) {
-      artPath = '/assets/cards/art/renegado-oscuro.png';
+      artPath = '/assets/cards/art/renegado-oscuro.webp';
     } else if (name.includes('Basilisco')) {
-      artPath = '/assets/cards/art/basilisco-caos.png';
+      artPath = '/assets/cards/art/basilisco-caos.webp';
     } else if (name.includes('Pesadilla')) {
-      artPath = '/assets/cards/art/pesadilla-mortal.png';
+      artPath = '/assets/cards/art/pesadilla-mortal.webp';
     } else if (name.includes('Santuario')) {
-      artPath = '/assets/cards/art/santuario-sagrado.png';
+      artPath = '/assets/cards/art/santuario-sagrado.webp';
     } else if (name.includes('Paradoja')) {
-      artPath = '/assets/cards/art/paradoja-vacio.png';
+      artPath = '/assets/cards/art/paradoja-vacio.webp';
     } else if (name.includes('Oso')) {
-      artPath = '/assets/cards/art/oso-forestal.png';
+      artPath = '/assets/cards/art/oso-forestal.webp';
     } else if (name.includes('Ciervo')) {
-      artPath = '/assets/cards/art/ciervo-sagrado.png';
+      artPath = '/assets/cards/art/ciervo-sagrado.webp';
     } else if (name.includes('Águila')) {
-      artPath = '/assets/cards/art/aguila-celestial.png';
+      artPath = '/assets/cards/art/aguila-celestial.webp';
     } else if (name.includes('Esqueleto')) {
-      artPath = '/assets/cards/art/esqueleto-guerrero.png';
+      artPath = '/assets/cards/art/esqueleto-guerrero.webp';
     } else if (name.includes('Zombi') || name.includes('Necrófago')) {
-      artPath = '/assets/cards/art/zombi-hambriento.png';
+      artPath = '/assets/cards/art/zombi-hambriento.webp';
     } else if (name.includes('Demonio')) {
-      artPath = '/assets/cards/art/demonio-infernal.png';
+      artPath = '/assets/cards/art/demonio-infernal.webp';
     } else if (name.includes('Murciélago')) {
-      artPath = '/assets/cards/art/murcielago-sombra.png';
+      artPath = '/assets/cards/art/murcielago-sombra.webp';
     } else if (name.includes('Parásito')) {
-      artPath = '/assets/cards/art/parasito-vacio.png';
+      artPath = '/assets/cards/art/parasito-vacio.webp';
     } else if (name.includes('Leviatán')) {
-      artPath = '/assets/cards/art/leviatan-abisal.png';
+      artPath = '/assets/cards/art/leviatan-abisal.webp';
     } else if (name.includes('Grifo')) {
-      artPath = '/assets/cards/art/grifo-orden.png';
+      artPath = '/assets/cards/art/grifo-orden.webp';
     } else if (name.includes('Pegaso')) {
-      artPath = '/assets/cards/art/pegaso-celestial.png';
+      artPath = '/assets/cards/art/pegaso-celestial.webp';
     } else if (name.includes('Clérigo') || name.includes('Sacerdote')) {
-      artPath = '/assets/cards/art/clerigo-luz.png';
+      artPath = '/assets/cards/art/clerigo-luz.webp';
     } else if (name.includes('Comandante') || name.includes('Jefe') || name.includes('Cacique')) {
-      artPath = '/assets/cards/art/orco-comandante.png';
+      artPath = '/assets/cards/art/orco-comandante.webp';
     } else if (name.includes('Orco')) {
-      artPath = '/assets/cards/art/orco-guerrero.png';
+      artPath = '/assets/cards/art/orco-guerrero.webp';
     } else if (name.includes('Biblioteca') || name.includes('Archivo') || name.includes('Monolito')) {
-      artPath = '/assets/cards/art/biblioteca-runica.png';
+      artPath = '/assets/cards/art/biblioteca-runica.webp';
     }
 
     CARDS_DB[id] = {

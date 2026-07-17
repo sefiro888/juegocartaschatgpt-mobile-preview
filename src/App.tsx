@@ -1,5 +1,4 @@
 import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
-import { useGameStore } from './store/gameStore';
 
 const Gallery = lazy(async () => {
   const module = await import('./components/Gallery');
@@ -17,6 +16,7 @@ const OnlineLobby = lazy(async () => {
 });
 
 const loadGameHUD = () => import('./components/GameHUD');
+const loadGameStore = () => import('./store/gameStore');
 
 const GameHUD = lazy(async () => {
   const module = await loadGameHUD();
@@ -86,26 +86,10 @@ const MenuParticles = () => {
 
 function App() {
   const [view, setView] = useState<ViewMode>('menu');
-  const [transitioning, setTransitioning] = useState(false);
-  const [nextView, setNextView] = useState<ViewMode | null>(null);
   const [viewRecoveryVersion, setViewRecoveryVersion] = useState(0);
-  const { startNewGame } = useGameStore();
-
   const navigateTo = (target: ViewMode) => {
-    setTransitioning(true);
-    setNextView(target);
+    setView(target);
   };
-
-  useEffect(() => {
-    if (transitioning && nextView) {
-      const timer = setTimeout(() => {
-        setView(nextView);
-        setNextView(null);
-        setTransitioning(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [transitioning, nextView]);
 
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).get('sala')) return;
@@ -113,30 +97,29 @@ function App() {
     setView('online-lobby');
   }, []);
 
-  const handleSelectFaction = (faction: 'FURIA' | 'ARCANO', theme: string) => {
-    startNewGame(faction, theme);
+  const handleSelectFaction = async (faction: 'FURIA' | 'ARCANO', theme: string) => {
+    const [, { useGameStore }] = await Promise.all([loadGameHUD(), loadGameStore()]);
+    useGameStore.getState().startNewGame(faction, theme);
     navigateTo('game');
   };
 
   const handleStartGameFlow = () => {
-    void loadGameHUD();
+    void Promise.all([loadGameHUD(), loadGameStore()]);
     navigateTo('faction-select');
   };
 
   const handleOnlineGameFlow = () => {
-    void loadGameHUD();
+    void Promise.all([loadGameHUD(), loadGameStore()]);
     navigateTo('online-lobby');
   };
 
   const handleViewRecovery = () => {
-    setTransitioning(false);
-    setNextView(null);
     setView('menu');
     setViewRecoveryVersion((current) => current + 1);
   };
 
   return (
-    <div className={`app-container ${transitioning ? 'fade-out' : 'fade-in'}`}>
+    <div className="app-container fade-in">
       {view === 'menu' && (
         <div className="main-menu-container">
           <MenuParticles />
