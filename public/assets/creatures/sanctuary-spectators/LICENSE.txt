@@ -1,0 +1,14 @@
+Ember Hound and Caldera Drake base models and animations
+--------------------------------------------------------
+
+Source project: Mesh2Motion
+Source repository: https://github.com/Mesh2Motion/mesh2motion-app
+Original files:
+- static/animations/fox-animations.glb
+- static/animations/dragon-animations.glb
+
+License: Creative Commons Zero v1.0 Universal (CC0-1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The assets are renamed and their presentation materials are adjusted at runtime
+for use as ambient guardians in Cronicas del Nexo.

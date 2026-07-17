@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { useGameStore } from './store/gameStore';
 
 const Gallery = lazy(async () => {
@@ -19,6 +19,34 @@ const GameHUD = lazy(async () => {
 });
 
 type ViewMode = 'menu' | 'faction-select' | 'game' | 'gallery' | 'deck-viewer';
+
+class ViewErrorBoundary extends Component<
+  { children: ReactNode; onExit: () => void },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="view-error-state" role="alert">
+          <strong>No se ha podido abrir esta vista.</strong>
+          <span>La partida no se ha modificado. Puedes volver al menu o recargar la aplicacion.</span>
+          <div className="view-error-actions">
+            <button type="button" onClick={this.props.onExit}>Volver al menu</button>
+            <button type="button" onClick={() => window.location.reload()}>Recargar</button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 /** Generates floating particle elements for the menu background */
 const MenuParticles = () => {
@@ -55,6 +83,7 @@ function App() {
   const [view, setView] = useState<ViewMode>('menu');
   const [transitioning, setTransitioning] = useState(false);
   const [nextView, setNextView] = useState<ViewMode | null>(null);
+  const [viewRecoveryVersion, setViewRecoveryVersion] = useState(0);
   const { startNewGame } = useGameStore();
 
   const navigateTo = (target: ViewMode) => {
@@ -81,6 +110,13 @@ function App() {
   const handleStartGameFlow = () => {
     void loadGameHUD();
     navigateTo('faction-select');
+  };
+
+  const handleViewRecovery = () => {
+    setTransitioning(false);
+    setNextView(null);
+    setView('menu');
+    setViewRecoveryVersion((current) => current + 1);
   };
 
   return (
@@ -265,11 +301,13 @@ function App() {
         </div>
       )}
 
-      <Suspense fallback={<div className="view-loading-indicator" aria-label="Cargando vista" />}>
-        {view === 'game' && <GameHUD onQuit={() => navigateTo('menu')} />}
-        {view === 'gallery' && <Gallery onBack={() => navigateTo('menu')} />}
-        {view === 'deck-viewer' && <DeckViewer onBack={() => navigateTo('menu')} />}
-      </Suspense>
+      <ViewErrorBoundary key={viewRecoveryVersion} onExit={handleViewRecovery}>
+        <Suspense fallback={<div className="view-loading-indicator" aria-label="Cargando vista" />}>
+          {view === 'game' && <GameHUD onQuit={() => navigateTo('menu')} />}
+          {view === 'gallery' && <Gallery onBack={() => navigateTo('menu')} />}
+          {view === 'deck-viewer' && <DeckViewer onBack={() => navigateTo('menu')} />}
+        </Suspense>
+      </ViewErrorBoundary>
 
       <style>{`
         .app-container {
@@ -290,6 +328,30 @@ function App() {
           border-top-color: #78cfff;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
+        }
+
+        .view-error-state {
+          width: min(440px, calc(100vw - 40px));
+          padding: 26px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          color: #eef6ff;
+          background: rgba(10, 17, 26, 0.94);
+          border: 1px solid rgba(137, 205, 238, 0.35);
+          border-radius: 8px;
+          box-shadow: 0 22px 64px rgba(0, 0, 0, 0.48);
+          text-align: center;
+        }
+        .view-error-state span { color: #b9c9d5; font-size: 0.85rem; line-height: 1.45; }
+        .view-error-actions { display: flex; justify-content: center; gap: 9px; margin-top: 5px; }
+        .view-error-actions button {
+          padding: 8px 12px;
+          border: 1px solid rgba(126, 211, 255, 0.45);
+          border-radius: 6px;
+          color: #effaff;
+          background: #176887;
+          cursor: pointer;
         }
 
         /* Page transitions */

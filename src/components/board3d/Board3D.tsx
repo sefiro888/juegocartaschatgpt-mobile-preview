@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -217,9 +217,14 @@ const ValidRoute: React.FC<ValidRouteProps> = ({ points, highlight }) => {
 interface CanvasHealthMonitorProps {
   onContextLost: () => void;
   onContextRestored: () => void;
+  onContextCreationFailed: () => void;
 }
 
-const CanvasHealthMonitor: React.FC<CanvasHealthMonitorProps> = ({ onContextLost, onContextRestored }) => {
+const CanvasHealthMonitor: React.FC<CanvasHealthMonitorProps> = ({
+  onContextLost,
+  onContextRestored,
+  onContextCreationFailed,
+}) => {
   const { gl } = useThree();
 
   useEffect(() => {
@@ -228,13 +233,19 @@ const CanvasHealthMonitor: React.FC<CanvasHealthMonitorProps> = ({ onContextLost
       event.preventDefault();
       onContextLost();
     };
+    const handleCreationError = (event: Event) => {
+      event.preventDefault();
+      onContextCreationFailed();
+    };
     canvas.addEventListener('webglcontextlost', handleLost);
     canvas.addEventListener('webglcontextrestored', onContextRestored);
+    canvas.addEventListener('webglcontextcreationerror', handleCreationError);
     return () => {
       canvas.removeEventListener('webglcontextlost', handleLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
+      canvas.removeEventListener('webglcontextcreationerror', handleCreationError);
     };
-  }, [gl, onContextLost, onContextRestored]);
+  }, [gl, onContextCreationFailed, onContextLost, onContextRestored]);
 
   return null;
 };
@@ -530,8 +541,33 @@ export const Board3D: React.FC = () => {
     faction: string;
   }>>([]);
   const [hoveredTacticalNodeId, setHoveredTacticalNodeId] = useState<string | null>(null);
-  const [canvasStatus, setCanvasStatus] = useState<'ready' | 'lost'>('ready');
+  const [canvasStatus, setCanvasStatus] = useState<'ready' | 'recovering' | 'lost'>('ready');
+  const [canvasVersion, setCanvasVersion] = useState(0);
   const previousBoardRef = useRef<Record<string, BoardEntity>>({});
+
+  const recoverCanvas = useCallback(() => {
+    setCanvasStatus('recovering');
+    setCanvasVersion((current) => current + 1);
+  }, []);
+
+  useEffect(() => {
+    if (canvasStatus !== 'recovering') return;
+    const timeoutId = window.setTimeout(() => {
+      setCanvasStatus((current) => current === 'recovering' ? 'lost' : current);
+    }, 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [canvasStatus]);
+
+  const handleCanvasCreated = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
+    if (gl.getContext().isContextLost()) {
+      setCanvasStatus('lost');
+      return;
+    }
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = 1.08;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+    setCanvasStatus('ready');
+  }, []);
 
   useEffect(() => {
     if (!presentationAction || !gameState) return;
@@ -803,26 +839,25 @@ export const Board3D: React.FC = () => {
       data-valid-move-positions={[...movementRoutesByKey.keys()].join(' ')}
     >
       <Canvas
+        key={canvasVersion}
         camera={{ position: [11.8, 19.2, 23.5], fov: 43, near: 0.1, far: 170 }}
         shadows={{ type: THREE.PCFShadowMap }}
-        dpr={[1, 1.25]}
+        dpr={[1, 1.1]}
         className="canvas3d"
         gl={{
           antialias: true,
           alpha: false,
           stencil: false,
           preserveDrawingBuffer: false,
+          failIfMajorPerformanceCaveat: false,
           powerPreference: 'high-performance',
         }}
-        onCreated={({ gl }) => {
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.08;
-          gl.outputColorSpace = THREE.SRGBColorSpace;
-        }}
+        onCreated={handleCanvasCreated}
       >
         <CanvasHealthMonitor
           onContextLost={() => setCanvasStatus('lost')}
           onContextRestored={() => setCanvasStatus('ready')}
+          onContextCreationFailed={() => setCanvasStatus('lost')}
         />
         <ResponsiveCamera />
         <SanctuaryMaterialsProvider enabled={useDetailedTextures}>
@@ -932,11 +967,13 @@ export const Board3D: React.FC = () => {
 
       {tacticalPreview && <TacticalPreviewPanel {...tacticalPreview} />}
 
-      {canvasStatus === 'lost' && (
+      {canvasStatus !== 'ready' && (
         <div className="canvas-recovery" role="alert">
-          <strong>El escenario 3D se ha detenido</strong>
-          <span>Se ha conservado la partida.</span>
-          <button type="button" onClick={() => window.location.reload()}>Recargar escenario</button>
+          <strong>{canvasStatus === 'recovering' ? 'Reconstruyendo el escenario 3D' : 'El escenario 3D se ha detenido'}</strong>
+          <span>La partida se conserva mientras se recupera el lienzo.</span>
+          <button type="button" onClick={recoverCanvas} disabled={canvasStatus === 'recovering'}>
+            {canvasStatus === 'recovering' ? 'Recuperando...' : 'Recuperar escenario'}
+          </button>
         </div>
       )}
 
@@ -1027,6 +1064,10 @@ export const Board3D: React.FC = () => {
           color: #eaf8ff;
           background: #176887;
           cursor: pointer;
+        }
+        .canvas-recovery button:disabled {
+          cursor: wait;
+          opacity: 0.68;
         }
       `}</style>
     </div>

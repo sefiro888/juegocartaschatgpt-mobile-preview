@@ -4,6 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { resolvePublicAsset } from '../../core/publicAssets';
 import type { WorldPoint } from '../../core/boardVisualLayout';
+import { SanctuarySpectators } from './SanctuarySpectators';
 
 const MODEL_URL = resolvePublicAsset('/assets/scenarios/floating-sanctuary/floating-sanctuary.glb');
 const CLOUD_TEXTURE_URL = resolvePublicAsset('/assets/scenarios/floating-sanctuary/textures/cloud.webp');
@@ -554,6 +555,7 @@ export const FloatingSanctuary: React.FC = () => {
 
     {showModel && <SanctuaryModel />}
     {showFullScene && <PortalVortex />}
+    {showFullScene && <SanctuarySpectators />}
 
     {showFullScene && (
       <>

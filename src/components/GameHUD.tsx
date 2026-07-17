@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { CardDOM } from './CardDOM';
 import { CARDS_DB } from '../core/cardsDb';
@@ -11,7 +11,7 @@ const Board3D = lazy(async () => {
 });
 
 class BoardErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+  { children: React.ReactNode; onRecover: () => void },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -25,8 +25,9 @@ class BoardErrorBoundary extends React.Component<
       return (
         <div className="board-error-state" role="alert">
           <strong>El santuario no ha podido cargarse.</strong>
-          <button type="button" onClick={() => window.location.reload()}>
-            Reintentar
+          <span>La partida se conserva. Puedes reiniciar solo el escenario 3D.</span>
+          <button type="button" onClick={this.props.onRecover}>
+            Recuperar escenario
           </button>
         </div>
       );
@@ -41,6 +42,7 @@ interface GameHUDProps {
 }
 
 export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
+  const [boardRecoveryVersion, setBoardRecoveryVersion] = useState(0);
   const {
     gameState,
     selectedCardInHand,
@@ -194,7 +196,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
       {/* ═══ CENTER LAYOUT: 3D BOARD & INSPECTOR SIDEBAR ═══ */}
       <div className="game-center-board">
         <div className="board-canvas-area">
-          <BoardErrorBoundary>
+          <BoardErrorBoundary
+            key={boardRecoveryVersion}
+            onRecover={() => setBoardRecoveryVersion((current) => current + 1)}
+          >
             <Suspense
               fallback={
                 <div className="board-loading" aria-label="Cargando el escenario">
