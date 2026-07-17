@@ -209,8 +209,9 @@ const SkyBackdropPlate: React.FC = () => {
       <spriteMaterial
         map={skyTexture}
         color="#c7d7e4"
-        depthTest={false}
+        depthTest
         depthWrite={false}
+        transparent={false}
         fog={false}
         toneMapped={false}
       />
