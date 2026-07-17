@@ -1281,6 +1281,16 @@ generateRemainingCards();
 
 export function getPreconstructedDeck(factionOrTheme: string): Card[] {
   const deck: Card[] = [];
+  const addFromPool = (preferredPool: Card[], fallbackPool: Card[], count: number) => {
+    const pool = preferredPool.length > 0 ? preferredPool : fallbackPool;
+    if (pool.length === 0) {
+      throw new Error(`No hay cartas disponibles para completar el mazo ${factionOrTheme}.`);
+    }
+
+    for (let i = 0; i < count; i++) {
+      deck.push({ ...pool[i % pool.length] });
+    }
+  };
   
   if (factionOrTheme === 'MAZO_VACIO') {
     // 10 Furia, 10 Arcano
@@ -1337,10 +1347,10 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
       c.faction === 'NATURALEZA' && 
       (c.type === 'ESTRUCTURA' || c.rulesText.includes('Cura') || c.rulesText.includes('vida'))
     );
-    for (let i = 0; i < 30; i++) {
-      const card = forestControlCards[i % forestControlCards.length];
-      deck.push({ ...card });
-    }
+    const fallbackForestControl = Object.values(CARDS_DB).filter(c =>
+      c.faction === 'NATURALEZA' && c.type !== 'MANA'
+    );
+    addFromPool(forestControlCards, fallbackForestControl, 30);
   } else if (factionOrTheme === 'MAZO_SOMBRA') {
     // 10 Furia, 10 Arcano
     for (let i = 0; i < 10; i++) deck.push({ ...CARDS_DB['fuente-furia'] });
@@ -1443,8 +1453,8 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
       { id: 'tejedora-escarcha', count: 2 },
       { id: 'prision-glacial', count: 2 },
       { id: 'cometa-arcano', count: 2 },
-      { id: 'buho-runico', count: 3 },
-      { id: 'mago-runa-helada', count: 3 },
+      { id: 'buho-runico', count: 2 },
+      { id: 'mago-runa-helada', count: 2 },
       { id: 'tejedora-tiempo', count: 2 }
     ];
     base.forEach(item => {
@@ -1502,10 +1512,12 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
       c.type === 'UNIDAD' && 
       ((c.cost.generic || 0) + (c.cost.furia || 0)) <= 3
     );
-    for (let i = 0; i < 16; i++) {
-      const card = genFuriaAgro[i % genFuriaAgro.length];
-      deck.push({ ...card });
-    }
+    const fallbackFuriaAgro = Object.values(CARDS_DB).filter(c =>
+      c.faction === 'FURIA' &&
+      c.type === 'UNIDAD' &&
+      ((c.cost.generic || 0) + (c.cost.furia || 0)) <= 3
+    );
+    addFromPool(genFuriaAgro, fallbackFuriaAgro, 16);
   } else if (factionOrTheme === 'FURIA_CONTROL') {
     // 22 Furia Mana
     for (let i = 0; i < 22; i++) deck.push({ ...CARDS_DB['fuente-furia'] });
@@ -1524,10 +1536,12 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
       c.id.startsWith('gen-furia-') && 
       ((c.cost.generic || 0) + (c.cost.furia || 0)) >= 4
     );
-    for (let i = 0; i < 16; i++) {
-      const card = genFuriaHeavy[i % genFuriaHeavy.length];
-      deck.push({ ...card });
-    }
+    const fallbackFuriaHeavy = Object.values(CARDS_DB).filter(c =>
+      c.faction === 'FURIA' &&
+      c.type !== 'MANA' &&
+      ((c.cost.generic || 0) + (c.cost.furia || 0)) >= 4
+    );
+    addFromPool(genFuriaHeavy, fallbackFuriaHeavy, 16);
   } else if (factionOrTheme === 'ARCANO_FREEZE') {
     // 20 Arcano Mana
     for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-arcana'] });
@@ -1546,10 +1560,11 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
       c.id.startsWith('gen-arcano-') && 
       (c.rulesText.includes('Congela') || c.rulesText.includes('congelar') || c.type === 'ESTRUCTURA' || c.type === 'UNIDAD')
     );
-    for (let i = 0; i < 16; i++) {
-      const card = genArcanoControl[i % genArcanoControl.length];
-      deck.push({ ...card });
-    }
+    const fallbackArcanoControl = Object.values(CARDS_DB).filter(c =>
+      c.faction === 'ARCANO' &&
+      (c.rulesText.includes('Congela') || c.rulesText.includes('congelar') || c.type === 'ESTRUCTURA' || c.type === 'UNIDAD')
+    );
+    addFromPool(genArcanoControl, fallbackArcanoControl, 16);
   } else if (factionOrTheme === 'ARCANO_SPELL') {
     // 20 Arcano Mana
     for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-arcana'] });
@@ -1567,10 +1582,10 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
     const genArcanoSpells = Object.values(CARDS_DB).filter(c => 
       c.id.startsWith('gen-arcano-') && c.type === 'HECHIZO'
     );
-    for (let i = 0; i < 16; i++) {
-      const card = genArcanoSpells[i % genArcanoSpells.length];
-      deck.push({ ...card });
-    }
+    const fallbackArcanoSpells = Object.values(CARDS_DB).filter(c =>
+      c.faction === 'ARCANO' && c.type === 'HECHIZO'
+    );
+    addFromPool(genArcanoSpells, fallbackArcanoSpells, 16);
   } else if (factionOrTheme === 'FURIA') {
     // Default Furia composition
     for (let i = 0; i < 20; i++) deck.push({ ...CARDS_DB['fuente-furia'] });
@@ -1615,6 +1630,11 @@ export function getPreconstructedDeck(factionOrTheme: string): Card[] {
     composition.forEach(item => {
       for (let i = 0; i < item.count; i++) deck.push({ ...CARDS_DB[item.id] });
     });
+  }
+
+  const invalidCardIndex = deck.findIndex((card) => !card.id || !card.cost);
+  if (invalidCardIndex !== -1) {
+    throw new Error(`El mazo ${factionOrTheme} contiene una carta invalida en la posicion ${invalidCardIndex}.`);
   }
 
   return deck;
