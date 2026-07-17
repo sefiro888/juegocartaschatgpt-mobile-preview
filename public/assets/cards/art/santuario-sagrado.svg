@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#1c1c14" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-santuario-sagrado)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Temple columns and pediment -->
+      <polygon points="100,120 300,120 200,70" fill="#3f2305" stroke="#fbbf24" stroke-width="3" />
+      <!-- Columns -->
+      <rect x="120" y="120" width="20" height="150" fill="#1c1c14" stroke="#fbbf24" stroke-width="2" />
+      <rect x="190" y="120" width="20" height="150" fill="#1c1c14" stroke="#fbbf24" stroke-width="2" />
+      <rect x="260" y="120" width="20" height="150" fill="#1c1c14" stroke="#fbbf24" stroke-width="2" />
+      <!-- Base steps -->
+      <rect x="80" y="270" width="240" height="35" rx="3" fill="#451a03" stroke="#eab308" stroke-width="2" />
+      <!-- Glowing inner aura -->
+      <circle cx="200" cy="180" r="35" fill="#fef9c3" opacity="0.65" filter="blur(8px)" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-santuario-sagrado" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#1c1c14" />
+    </radialGradient>
+  </defs>
+</svg>

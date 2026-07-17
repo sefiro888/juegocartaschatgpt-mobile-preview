@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#0f0714" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-esqueleto-guerrero)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Skeleton torso bones (stylized lines) -->
+      <line x1="200" y1="170" x2="200" y2="250" stroke="#f3e8ff" stroke-width="6" />
+      <line x1="160" y1="190" x2="240" y2="190" stroke="#f3e8ff" stroke-width="4" />
+      <line x1="170" y1="210" x2="230" y2="210" stroke="#f3e8ff" stroke-width="3" />
+      <line x1="175" y1="230" x2="225" y2="230" stroke="#f3e8ff" stroke-width="3" />
+      <!-- Skull -->
+      <circle cx="200" cy="140" r="15" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.5" />
+      <rect x="193" y="152" width="14" height="8" rx="2" fill="#f3e8ff" />
+      <circle cx="194" cy="142" r="2.5" fill="#000" />
+      <circle cx="206" cy="142" r="2.5" fill="#000" />
+      <!-- Rusty shield -->
+      <circle cx="140" cy="220" r="25" fill="#332009" stroke="#92400e" stroke-width="3" />
+      <!-- Glowing green fog backdrop -->
+      <circle cx="200" cy="180" r="70" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="5 5" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-esqueleto-guerrero" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#0f0714" />
+    </radialGradient>
+  </defs>
+</svg>

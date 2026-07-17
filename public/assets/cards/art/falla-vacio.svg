@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#0b0514" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-falla-vacio)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Jagged vertical cosmic rift -->
+      <polygon points="190,40 215,40 230,120 180,180 220,240 180,320 205,320 235,220 190,160 225,100" fill="#000" stroke="#ec4899" stroke-width="3.5" />
+      <!-- Glowing matter leakage background -->
+      <polygon points="190,40 215,40 230,120 180,180 220,240 180,320 205,320 235,220 190,160 225,100" fill="#8b5cf6" opacity="0.25" filter="blur(8px)" />
+      <!-- Spark particles -->
+      <circle cx="160" cy="110" r="3" fill="#fae8ff"/>
+      <circle cx="240" cy="210" r="4.5" fill="#fae8ff"/>
+    
+
+  <defs>
+    <radialGradient id="bgGrad-falla-vacio" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#0b0514" />
+    </radialGradient>
+  </defs>
+</svg>

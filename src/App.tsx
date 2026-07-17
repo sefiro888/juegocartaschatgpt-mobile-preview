@@ -1,8 +1,22 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useGameStore } from './store/gameStore';
-import { Gallery } from './components/Gallery';
-import { DeckViewer } from './components/DeckViewer';
-import { GameHUD } from './components/GameHUD';
+
+const Gallery = lazy(async () => {
+  const module = await import('./components/Gallery');
+  return { default: module.Gallery };
+});
+
+const DeckViewer = lazy(async () => {
+  const module = await import('./components/DeckViewer');
+  return { default: module.DeckViewer };
+});
+
+const loadGameHUD = () => import('./components/GameHUD');
+
+const GameHUD = lazy(async () => {
+  const module = await loadGameHUD();
+  return { default: module.GameHUD };
+});
 
 type ViewMode = 'menu' | 'faction-select' | 'game' | 'gallery' | 'deck-viewer';
 
@@ -64,6 +78,11 @@ function App() {
     navigateTo('game');
   };
 
+  const handleStartGameFlow = () => {
+    void loadGameHUD();
+    navigateTo('faction-select');
+  };
+
   return (
     <div className={`app-container ${transitioning ? 'fade-out' : 'fade-in'}`}>
       {view === 'menu' && (
@@ -77,7 +96,7 @@ function App() {
           </div>
 
           <div className="menu-actions glass-panel">
-            <button className="menu-btn primary" onClick={() => navigateTo('faction-select')}>
+            <button className="menu-btn primary" onClick={handleStartGameFlow}>
               ⚔️ Jugar contra la IA
             </button>
             <button className="menu-btn secondary" onClick={() => navigateTo('gallery')}>
@@ -163,6 +182,81 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* HÍBRIDOS Y ESPECIALES */}
+            <div className="faction-card hybrid glass-panel">
+              <div className="faction-art-preview hybrid-art">
+                <div className="faction-art-icon">⚡</div>
+              </div>
+              <h3>NEXO</h3>
+              <p className="faction-commander-title">Mazos Híbridos & Temáticos</p>
+              <div className="faction-lore">
+                "Combina las fuerzas del fuego y del hielo, o utiliza la sinergia oculta de las Bestias y las Estructuras sagradas."
+              </div>
+              <div className="faction-traits">
+                <span className="trait hybrid-tag">⚡ Híbrido</span>
+                <span className="trait hybrid-tag">⚜️ Sinergia</span>
+              </div>
+
+              <div className="deck-choices-list">
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'NEXO_HIBRIDO')}>
+                  <h4>⚡ Combustión Rúnica</h4>
+                  <p>Mezcla agresiva de Furia y control congelante de Arcano.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'BARAJA_BESTIAS')}>
+                  <h4>🦁 Manada del Nexo</h4>
+                  <p>Bestias: Sabuesos, Búhos, Dracos y Elementales.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'FORTALEZA_RUNICA')}>
+                  <h4>🛡️ Fortaleza Antigua</h4>
+                  <p>Estructuras defensivas, Forjas y Golems colosales.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_SOMBRA')}>
+                  <h4>🕸️ Reino Umbrío</h4>
+                  <p>Fieles de Sombra: Espectros, Vampiros y Nigromancia.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_NATURALEZA')}>
+                  <h4>🌿 Abrazo Forestal</h4>
+                  <p>Naturaleza pura: Centauros, Lobos y Sanaciones salvajes.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_CELESTIAL')}>
+                  <h4>🦅 Reinos del Aire</h4>
+                  <p>Animales Celestiales: Ángeles, Grifos, Halcones y Pegasos.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_ACUATICO')}>
+                  <h4>🌊 Abismo Marino</h4>
+                  <p>Criaturas acuáticas, Leviatanes y magias de agua abisales.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_RENEGADOS')}>
+                  <h4>🗑️ Pila de Renegados</h4>
+                  <p>Cartas rechazadas, descartes caóticos y Goblins locos.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_ORCOS_BESTIAS')}>
+                  <h4>👹 Horda Orca</h4>
+                  <p>Sinergia brutal de Orcos de Sombra y Bestias de Furia.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_VACIO')}>
+                  <h4>🌌 Vacío Entrópico</h4>
+                  <p>Falla del Vacío: Horrores, parásitos y magias de aniquilación.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_ORDEN')}>
+                  <h4>🛡️ Edicto Sagrado</h4>
+                  <p>Unidades de Orden: Ángeles, paladines y escudos divinos.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_ULTIMO_ALIENTO')}>
+                  <h4>💀 Último Aliento</h4>
+                  <p>Mazo de sacrificio y fénix que reviven al morir.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_DOBLE_ATAQUE')}>
+                  <h4>🌪️ Ráfaga de Furia</h4>
+                  <p>Doble golpe: Atacantes que golpean dos veces por turno.</p>
+                </div>
+                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_FORESTAL_CONTROL')}>
+                  <h4>🌳 Raíces de Vida</h4>
+                  <p>Control de Naturaleza: Curación constante y muros gruesos.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <button className="back-menu-btn" onClick={() => navigateTo('menu')}>
@@ -171,9 +265,11 @@ function App() {
         </div>
       )}
 
-      {view === 'game' && <GameHUD onQuit={() => navigateTo('menu')} />}
-      {view === 'gallery' && <Gallery onBack={() => navigateTo('menu')} />}
-      {view === 'deck-viewer' && <DeckViewer onBack={() => navigateTo('menu')} />}
+      <Suspense fallback={<div className="view-loading-indicator" aria-label="Cargando vista" />}>
+        {view === 'game' && <GameHUD onQuit={() => navigateTo('menu')} />}
+        {view === 'gallery' && <Gallery onBack={() => navigateTo('menu')} />}
+        {view === 'deck-viewer' && <DeckViewer onBack={() => navigateTo('menu')} />}
+      </Suspense>
 
       <style>{`
         .app-container {
@@ -185,6 +281,15 @@ function App() {
           align-items: center;
           justify-content: center;
           position: relative;
+        }
+
+        .view-loading-indicator {
+          width: 34px;
+          height: 34px;
+          border: 3px solid rgba(151, 183, 214, 0.18);
+          border-top-color: #78cfff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
         }
 
         /* Page transitions */
@@ -352,10 +457,10 @@ function App() {
           animation: slide-up 0.6s ease-out;
         }
 
-        .factions-grid {
+         .factions-grid {
           display: flex;
-          gap: 30px;
-          max-width: 900px;
+          gap: 24px;
+          max-width: 1200px;
           width: 100%;
           margin-bottom: 40px;
           z-index: 1;
@@ -385,6 +490,22 @@ function App() {
           transform: translateY(-12px) scale(1.02);
           box-shadow: 0 15px 40px rgba(0, 217, 255, 0.25);
           border-color: var(--color-arcano);
+        }
+
+        .faction-card.hybrid:hover {
+          transform: translateY(-12px) scale(1.02);
+          box-shadow: 0 15px 40px rgba(139, 92, 246, 0.25);
+          border-color: #8b5cf6;
+        }
+
+        .trait.hybrid-tag {
+          background: rgba(139, 92, 246, 0.1);
+          color: #a78bfa;
+          border-color: rgba(139, 92, 246, 0.25);
+        }
+
+        .faction-art-preview.hybrid-art {
+          background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
         }
 
         /* Faction art preview area */
@@ -489,6 +610,9 @@ function App() {
           width: 100%;
           margin-top: 10px;
           z-index: 5;
+          max-height: 240px;
+          overflow-y: auto;
+          padding-right: 4px;
         }
 
         .deck-choice-item {

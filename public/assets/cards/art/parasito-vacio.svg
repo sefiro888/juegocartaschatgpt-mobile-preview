@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#0b0514" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-parasito-vacio)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Small segmented insectoid body -->
+      <ellipse cx="200" cy="190" rx="15" ry="30" fill="#1e0b36" stroke="#ec4899" stroke-width="2" />
+      <circle cx="200" cy="140" r="12" fill="#080112" stroke="#ec4899" stroke-width="2" />
+      <!-- segmented lines -->
+      <line x1="190" y1="180" x2="210" y2="180" stroke="#8b5cf6" stroke-width="2" />
+      <line x1="188" y1="200" x2="212" y2="200" stroke="#8b5cf6" stroke-width="2" />
+      <!-- Glowing antennae -->
+      <path d="M 195,130 Q 170,90 150,110" fill="none" stroke="#fae8ff" stroke-width="2" stroke-linecap="round" />
+      <path d="M 205,130 Q 230,90 250,110" fill="none" stroke="#fae8ff" stroke-width="2" stroke-linecap="round" />
+      <circle cx="150" cy="110" r="3.5" fill="#ec4899" />
+      <circle cx="250" cy="110" r="3.5" fill="#ec4899" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-parasito-vacio" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#0b0514" />
+    </radialGradient>
+  </defs>
+</svg>

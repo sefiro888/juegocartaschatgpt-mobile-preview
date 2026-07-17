@@ -6,12 +6,19 @@ class AudioSynthService {
   init() {
     if (this.ctx) return;
     try {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.2, this.ctx.currentTime); // Master volume 20%
-      this.masterGain.connect(this.ctx.destination);
-    } catch (e) {
-      console.warn("Web Audio API not supported", e);
+      const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
+      const AudioContextConstructor = typeof AudioContext !== 'undefined'
+        ? AudioContext
+        : audioWindow.webkitAudioContext;
+      if (!AudioContextConstructor) return;
+      const context = new AudioContextConstructor();
+      const masterGain = context.createGain();
+      masterGain.gain.setValueAtTime(0.2, context.currentTime); // Master volume 20%
+      masterGain.connect(context.destination);
+      this.ctx = context;
+      this.masterGain = masterGain;
+    } catch (error) {
+      console.warn('Web Audio API not supported', error);
     }
   }
 
@@ -89,7 +96,7 @@ class AudioSynthService {
       noiseGain.connect(this.masterGain);
       noise.start(time);
       noise.stop(time + 0.22);
-    } catch (e) {
+    } catch {
       // Fallback if buffer creation fails
     }
   }

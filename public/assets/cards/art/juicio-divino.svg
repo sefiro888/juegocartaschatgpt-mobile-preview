@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#1c1c14" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-juicio-divino)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Blinding beam from above -->
+      <polygon points="170,0 230,0 260,330 140,330" fill="#fef9c3" opacity="0.65" filter="blur(8px)" />
+      <polygon points="185,0 215,0 230,330 170,330" fill="#ffffff" />
+      <!-- Radiating golden waves at the impact point -->
+      <ellipse cx="200" cy="310" rx="80" ry="20" fill="none" stroke="#eab308" stroke-width="3" />
+      <ellipse cx="200" cy="310" rx="50" ry="12" fill="none" stroke="#ffffff" stroke-width="2" />
+      <!-- Flying light rays -->
+      <line x1="120" y1="280" x2="80" y2="290" stroke="#fbbf24" stroke-width="2" />
+      <line x1="280" y1="280" x2="320" y2="290" stroke="#fbbf24" stroke-width="2" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-juicio-divino" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#1c1c14" />
+    </radialGradient>
+  </defs>
+</svg>

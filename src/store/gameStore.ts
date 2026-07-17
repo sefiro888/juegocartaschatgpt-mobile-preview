@@ -170,3 +170,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   }
 }));
+
+if (import.meta.env.DEV) {
+  const developmentWindow = window as typeof window & {
+    __NEXO_GAME_STORE__?: typeof useGameStore;
+  };
+  developmentWindow.__NEXO_GAME_STORE__ = useGameStore;
+}

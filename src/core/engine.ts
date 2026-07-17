@@ -1,6 +1,7 @@
 import type { Card, GameState, Position, BoardEntity, PlayerState } from '../types/card';
 import { CARDS_DB } from './cardsDb';
 import { COMMANDER_COLUMN, OPPONENT_BACK_ROW, PLAYER_BACK_ROW, isInsideBoard } from './boardConfig';
+import { findMovementPath, hasLineOfSight, isBoardObstacle } from './boardPathfinding';
 
 // Seedable PRNG (SplitMix32)
 export function createRandom(seedStr: string) {
@@ -43,6 +44,40 @@ export function isAdjacent(pos1: Position, pos2: Position, allowDiagonal = false
     return dx <= 1 && dy <= 1 && !(dx === 0 && dy === 0);
   }
   return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+}
+
+function isInCardAttackGeometry(
+  board: Record<string, BoardEntity>,
+  attackerPosition: Position,
+  targetPosition: Position,
+  card: Card,
+): boolean {
+  const range = card.range ?? 1;
+  if (range <= 1) {
+    return isAdjacent(
+      attackerPosition,
+      targetPosition,
+      card.rulesText.includes('Movimiento Diagonal'),
+    );
+  }
+  return getDistance(attackerPosition, targetPosition) <= range &&
+    hasLineOfSight(board, attackerPosition, targetPosition);
+}
+
+export function canAttackTarget(
+  state: GameState,
+  attackerPosition: Position,
+  targetPosition: Position,
+): boolean {
+  const attacker = state.board[`${attackerPosition.x},${attackerPosition.y}`];
+  const target = state.board[`${targetPosition.x},${targetPosition.y}`];
+  if (!attacker || !target || isBoardObstacle(target)) return false;
+  if (attacker.controller !== state.activePlayer || attacker.controller === target.controller) return false;
+  if (attacker.hasAttackedThisTurn || attacker.frozenTurns > 0) return false;
+
+  const card = CARDS_DB[attacker.cardId];
+  if (!card || card.type === 'ESTRUCTURA') return false;
+  return isInCardAttackGeometry(state.board, attackerPosition, targetPosition, card);
 }
 
 // Deep-clone a PlayerState to avoid shared-reference mutation
@@ -108,7 +143,7 @@ function resolveDeathTrigger(
   // Elemental de Lava: deal 2 damage to all adjacent units
   for (const key of Object.keys(board)) {
     const ent = board[key];
-    if (isAdjacent(ent.position, deathPos, false)) {
+    if (!isBoardObstacle(ent) && isAdjacent(ent.position, deathPos, false)) {
       ent.health -= 2;
       if (ent.health <= 0) {
         const w = resolveEntityDeath(board, key, ent, player, opponent);
@@ -207,45 +242,27 @@ export function initializeGame(
     frozenTurns: 0,
   };
 
-  // Place neutral obstacles near the middle to block straight lanes without closing the map.
-  board["2,4"] = {
-    id: "obstacle-1",
-    cardId: "obstaculo-lava",
-    controller: 'OPPONENT',
-    position: { x: 2, y: 4 },
-    health: 99,
-    maxHealth: 99,
-    attack: 0,
-    hasMovedThisTurn: true,
-    hasAttackedThisTurn: true,
-    frozenTurns: 0,
-  };
+  // Alternating terrain obstacles create several viable lanes through the middle.
+  const obstacles: Array<{ id: string; cardId: string; position: Position }> = [
+    { id: 'obstacle-ridge-west', cardId: 'obstaculo-risco', position: { x: 2, y: 4 } },
+    { id: 'obstacle-crystal-center', cardId: 'obstaculo-pilar', position: { x: 5, y: 4 } },
+    { id: 'obstacle-current-west', cardId: 'obstaculo-corriente', position: { x: 3, y: 5 } },
+    { id: 'obstacle-ridge-east', cardId: 'obstaculo-risco', position: { x: 7, y: 5 } },
+    { id: 'obstacle-current-east', cardId: 'obstaculo-corriente', position: { x: 8, y: 4 } },
+  ];
 
-  board["5,4"] = {
-    id: "obstacle-2",
-    cardId: "obstaculo-pilar",
-    controller: 'OPPONENT',
-    position: { x: 5, y: 4 },
-    health: 99,
-    maxHealth: 99,
-    attack: 0,
-    hasMovedThisTurn: true,
-    hasAttackedThisTurn: true,
-    frozenTurns: 0,
-  };
-
-  board["7,5"] = {
-    id: "obstacle-3",
-    cardId: "obstaculo-lava",
-    controller: 'OPPONENT',
-    position: { x: 7, y: 5 },
-    health: 99,
-    maxHealth: 99,
-    attack: 0,
-    hasMovedThisTurn: true,
-    hasAttackedThisTurn: true,
-    frozenTurns: 0,
-  };
+  for (const obstacle of obstacles) {
+    board[`${obstacle.position.x},${obstacle.position.y}`] = {
+      ...obstacle,
+      controller: 'OPPONENT',
+      health: 99,
+      maxHealth: 99,
+      attack: 0,
+      hasMovedThisTurn: true,
+      hasAttackedThisTurn: true,
+      frozenTurns: 0,
+    };
+  }
 
   return {
     board,
@@ -427,7 +444,7 @@ export function summonUnit(
   if (card.id === 'dragon-caldera') {
     for (const key of Object.keys(nextBoard)) {
       const ent = nextBoard[key];
-      if (ent.controller !== playerId && isAdjacent(ent.position, pos, false)) {
+      if (!isBoardObstacle(ent) && ent.controller !== playerId && isAdjacent(ent.position, pos, false)) {
         ent.health -= 2;
         if (ent.health <= 0) {
           const w = resolveEntityDeath(nextBoard, key, ent, pState1, pState2);
@@ -443,7 +460,7 @@ export function summonUnit(
   if (card.id === 'tejedora-escarcha' && battlecryTargetPos) {
     const targetKey = `${battlecryTargetPos.x},${battlecryTargetPos.y}`;
     const targetEnt = nextBoard[targetKey];
-    if (targetEnt && targetEnt.controller !== playerId) {
+    if (targetEnt && !isBoardObstacle(targetEnt) && targetEnt.controller !== playerId) {
       targetEnt.frozenTurns = 1;
     }
   }
@@ -453,7 +470,7 @@ export function summonUnit(
     const adjacentEnemies: { key: string; ent: BoardEntity }[] = [];
     for (const key of Object.keys(nextBoard)) {
       const ent = nextBoard[key];
-      if (ent.controller !== playerId && isAdjacent(ent.position, pos, false)) {
+      if (!isBoardObstacle(ent) && ent.controller !== playerId && isAdjacent(ent.position, pos, false)) {
         adjacentEnemies.push({ key, ent });
       }
     }
@@ -486,7 +503,7 @@ export function summonUnit(
   // Elemental de Tormenta: Freeze 2 random enemy units
   if (card.id === 'elemental-tormenta') {
     const enemyUnits = Object.values(nextBoard).filter(
-      ent => ent.controller !== playerId && ent.id !== 'commander-player' && ent.id !== 'commander-opponent'
+      ent => !isBoardObstacle(ent) && ent.controller !== playerId && ent.id !== 'commander-player' && ent.id !== 'commander-opponent'
     );
     if (enemyUnits.length > 0) {
       const random = createRandom(state.seed + Date.now());
@@ -545,12 +562,12 @@ export function moveUnit(state: GameState, from: Position, to: Position): GameSt
   const card = CARDS_DB[entity.cardId];
   if (!card || card.type === 'ESTRUCTURA') return state;
 
-  // Check diagonal movement for Infiltrado Volcánico
-  const diagonal = card.rulesText.includes('Movimiento Diagonal');
-  if (!isAdjacent(from, to, diagonal)) return state;
-
-  // Check if destination is empty
-  if (state.board[toKey]) return state;
+  const movementAllowance = card.movement ?? 1;
+  const path = findMovementPath(state.board, from, to, movementAllowance, {
+    allowDiagonal: true,
+    canFly: card.rulesText.includes('Vuelo'),
+  });
+  if (!path) return state;
 
   const updatedEntity = {
     ...entity,
@@ -576,15 +593,10 @@ export function combatAttack(state: GameState, attackerPos: Position, targetPos:
   const origAttacker = state.board[attKey];
   const origTarget = state.board[tarKey];
 
-  if (!origAttacker || !origTarget) return state;
-  if (origAttacker.controller !== state.activePlayer) return state;
-  if (origAttacker.hasAttackedThisTurn || origAttacker.frozenTurns > 0) return state;
+  if (!origAttacker || !origTarget || !canAttackTarget(state, attackerPos, targetPos)) return state;
 
   const attCard = CARDS_DB[origAttacker.cardId];
-  if (!attCard || attCard.type === 'ESTRUCTURA') return state;
-
-  const diagonal = attCard.rulesText.includes('Movimiento Diagonal');
-  if (!isAdjacent(attackerPos, targetPos, diagonal)) return state;
+  if (!attCard) return state;
 
   // Deep-clone board and entities for immutable update
   const newBoard = cloneBoard(state.board);
@@ -607,7 +619,12 @@ export function combatAttack(state: GameState, attackerPos: Position, targetPos:
     damageToTarget = Math.max(0, damageToTarget - 1);
   }
 
-  let damageToAttacker = target.attack;
+  const targetCanRetaliate = Boolean(
+    tarCard &&
+    tarCard.type !== 'ESTRUCTURA' &&
+    isInCardAttackGeometry(newBoard, target.position, attacker.position, tarCard),
+  );
+  let damageToAttacker = targetCanRetaliate ? target.attack : 0;
   if (attCard && attCard.rulesText.includes('Resistencia')) {
     damageToAttacker = Math.max(0, damageToAttacker - 1);
   }
@@ -708,6 +725,7 @@ export function playSpell(
   if (targetPos) {
     const targetKey = `${targetPos.x},${targetPos.y}`;
     const targetEnt = state.board[targetKey];
+    if (isBoardObstacle(targetEnt)) return state;
     if (targetEnt && CARDS_DB[targetEnt.cardId]?.rulesText.includes('Inmune a Hechizos')) {
       return state; // Cast is blocked / invalid
     }
@@ -728,7 +746,7 @@ export function playSpell(
   // --- Helper to deal damage to an entity by position key ---
   const dealDamageAtKey = (key: string, damage: number) => {
     const ent = nextBoard[key];
-    if (!ent) return;
+    if (!ent || isBoardObstacle(ent)) return;
     ent.health -= damage;
     if (ent.health <= 0) {
       const savedCardId = ent.cardId;
@@ -838,6 +856,7 @@ export function playSpell(
     for (const key of entityKeys) {
       if (!nextBoard[key]) continue; // May have been removed by chain deaths
       const ent = nextBoard[key];
+      if (isBoardObstacle(ent)) continue;
       // Deal damage to all units (including commanders and structures per card text: "todas las unidades en el tablero")
       if (ent.id === 'commander-player' || ent.id === 'commander-opponent') continue; // Skip commanders for balance
       ent.health -= 2;
@@ -856,7 +875,7 @@ export function playSpell(
   if (card.id === 'congelacion-rapida' && targetPos) {
     const key = `${targetPos.x},${targetPos.y}`;
     const targetEnt = nextBoard[key];
-    if (targetEnt && targetEnt.controller !== playerId) {
+    if (targetEnt && !isBoardObstacle(targetEnt) && targetEnt.controller !== playerId) {
       targetEnt.frozenTurns = Math.max(targetEnt.frozenTurns, 1);
     }
     const casterState = playerId === 'PLAYER' ? pState1 : pState2;
@@ -870,7 +889,7 @@ export function playSpell(
     const targetX = targetPos.x;
     for (const key of Object.keys(nextBoard)) {
       const ent = nextBoard[key];
-      if (ent.controller !== playerId && ent.position.x === targetX) {
+      if (!isBoardObstacle(ent) && ent.controller !== playerId && ent.position.x === targetX) {
         // Respect spell immunity
         const entCard = CARDS_DB[ent.cardId];
         if (entCard && entCard.rulesText.includes('Inmune a Hechizos')) continue;
@@ -910,7 +929,7 @@ export function endTurn(state: GameState): GameState {
         if (adjKey === key) continue; // Skip self
         const adjEnt = nextBoard[adjKey];
         if (!adjEnt) continue;
-        if (isAdjacent(adjEnt.position, golemPos, false)) {
+        if (!isBoardObstacle(adjEnt) && isAdjacent(adjEnt.position, golemPos, false)) {
           adjEnt.health -= 1;
           if (adjEnt.health <= 0) {
             const savedCardId = adjEnt.cardId;
@@ -949,7 +968,7 @@ export function endTurn(state: GameState): GameState {
         const enemiesInRow: { key: string; ent: BoardEntity }[] = [];
         for (const eKey of Object.keys(nextBoard)) {
           const e = nextBoard[eKey];
-          if (e.controller !== 'PLAYER' && e.position.y === pilarY &&
+          if (!isBoardObstacle(e) && e.controller !== 'PLAYER' && e.position.y === pilarY &&
               e.id !== 'commander-player' && e.id !== 'commander-opponent') {
             enemiesInRow.push({ key: eKey, ent: e });
           }
@@ -1018,7 +1037,7 @@ export function endTurn(state: GameState): GameState {
         const enemiesInRow: { key: string; ent: BoardEntity }[] = [];
         for (const eKey of Object.keys(nextBoard)) {
           const e = nextBoard[eKey];
-          if (e.controller !== 'OPPONENT' && e.position.y === pilarY &&
+          if (!isBoardObstacle(e) && e.controller !== 'OPPONENT' && e.position.y === pilarY &&
               e.id !== 'commander-player' && e.id !== 'commander-opponent') {
             enemiesInRow.push({ key: eKey, ent: e });
           }

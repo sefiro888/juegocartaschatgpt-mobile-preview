@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#1c1c14" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-paladin-glorioso)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Radiant sunburst backdrop -->
+      <circle cx="200" cy="150" r="85" fill="none" stroke="#eab308" stroke-width="2" stroke-dasharray="15 5" />
+      <path d="M 200,65 V 235 M 115,150 H 285 M 140,90 L 260,210 M 140,210 L 260,90" stroke="#eab308" stroke-width="1.5" stroke-opacity="0.4" />
+      <!-- Heavy armored knight holding sword -->
+      <g transform="translate(130, 90)">
+        <path d="M 20,130 L 120,130 L 110,230 L 30,230 Z" fill="#3f2305" stroke="#fbbf24" stroke-width="2.5" />
+        <circle cx="70" cy="90" r="20" fill="#451a03" stroke="#eab308" stroke-width="2" />
+        <!-- Sword of light -->
+        <line x1="120" y1="130" x2="160" y2="40" stroke="#fef9c3" stroke-width="5" stroke-linecap="round" />
+        <circle cx="160" cy="40" r="10" fill="#eab308" opacity="0.7" filter="blur(4px)" />
+      </g>
+    
+
+  <defs>
+    <radialGradient id="bgGrad-paladin-glorioso" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#1c1c14" />
+    </radialGradient>
+  </defs>
+</svg>

@@ -83,7 +83,7 @@ describe('Rules Engine', () => {
     expect(state.board["4,3"]).toBeUndefined();
   });
 
-  it('should handle movement (orthogonal vs diagonal keywords)', () => {
+  it('should handle movement in all eight directions', () => {
     let state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
     
     // Place units on board
@@ -101,8 +101,8 @@ describe('Rules Engine', () => {
     };
 
     state.board["3,1"] = {
-      id: "infiltrado_1",
-      cardId: "infiltrado-volcanico", // Has diagonal movement keyword
+      id: "berserker_diagonal_1",
+      cardId: "berserker-ignivoro",
       controller: 'PLAYER',
       position: { x: 3, y: 1 },
       health: 2,
@@ -119,16 +119,54 @@ describe('Rules Engine', () => {
     expect(state.board["1,2"]).toBeDefined();
     expect(state.board["1,2"].hasMovedThisTurn).toBe(true);
 
-    // Try to move diagonal for normal unit: (1,2) -> (2,3) -> should fail
+    // A movement-2 unit can combine both axes across its movement budget.
     state.board["1,2"].hasMovedThisTurn = false; // Reset move lock
     state = moveUnit(state, { x: 1, y: 2 }, { x: 2, y: 3 });
-    expect(state.board["1,2"]).toBeDefined();
-    expect(state.board["2,3"]).toBeUndefined();
+    expect(state.board["1,2"]).toBeUndefined();
+    expect(state.board["2,3"]).toBeDefined();
 
-    // Move diagonal for Infiltrado Volcánico: (3,1) -> (4,2) -> should succeed
+    // Normal movement-1 units can also move diagonally in one step.
     state = moveUnit(state, { x: 3, y: 1 }, { x: 4, y: 2 });
     expect(state.board["3,1"]).toBeUndefined();
     expect(state.board["4,2"]).toBeDefined();
+  });
+
+  it('should use each card movement value and respect blocking terrain', () => {
+    let state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.board["1,1"] = {
+      id: "hound_range_test",
+      cardId: "sabueso-brasa",
+      controller: 'PLAYER',
+      position: { x: 1, y: 1 },
+      health: 1,
+      maxHealth: 1,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+
+    state = moveUnit(state, { x: 1, y: 1 }, { x: 1, y: 3 });
+    expect(state.board["1,1"]).toBeUndefined();
+    expect(state.board["1,3"]?.id).toBe('hound_range_test');
+
+    state.board["1,3"].hasMovedThisTurn = false;
+    state.board["1,2"] = {
+      id: "ridge_range_test",
+      cardId: "obstaculo-risco",
+      controller: 'OPPONENT',
+      position: { x: 1, y: 2 },
+      health: 99,
+      maxHealth: 99,
+      attack: 0,
+      hasMovedThisTurn: true,
+      hasAttackedThisTurn: true,
+      frozenTurns: 0,
+    };
+
+    state = moveUnit(state, { x: 1, y: 3 }, { x: 1, y: 1 });
+    expect(state.board["1,3"]?.id).toBe('hound_range_test');
+    expect(state.board["1,1"]).toBeUndefined();
   });
 
   it('should resolve combat, damage, and death correctly', () => {
@@ -171,6 +209,80 @@ describe('Rules Engine', () => {
     // Attacker takes 2 damage, health becomes 0, dies as well
     expect(state.board["2,1"]).toBeUndefined();
     expect(state.player.graveyard.map(c => c.id)).toContain('infiltrado-volcanico');
+  });
+
+  it('should apply unit range, line of sight, and ranged retaliation rules', () => {
+    let state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.board["0,1"] = {
+      id: "ranged_attacker",
+      cardId: "mago-runa-helada",
+      controller: 'PLAYER',
+      position: { x: 0, y: 1 },
+      health: 3,
+      maxHealth: 3,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+    state.board["0,3"] = {
+      id: "melee_target",
+      cardId: "sabueso-brasa",
+      controller: 'OPPONENT',
+      position: { x: 0, y: 3 },
+      health: 3,
+      maxHealth: 3,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+
+    state = combatAttack(state, { x: 0, y: 1 }, { x: 0, y: 3 });
+    expect(state.board["0,3"].health).toBe(1);
+    expect(state.board["0,1"].health).toBe(3);
+
+    state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.board["0,1"] = {
+      id: "blocked_ranged_attacker",
+      cardId: "mago-runa-helada",
+      controller: 'PLAYER',
+      position: { x: 0, y: 1 },
+      health: 3,
+      maxHealth: 3,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+    state.board["0,2"] = {
+      id: "line_of_sight_ridge",
+      cardId: "obstaculo-risco",
+      controller: 'OPPONENT',
+      position: { x: 0, y: 2 },
+      health: 99,
+      maxHealth: 99,
+      attack: 0,
+      hasMovedThisTurn: true,
+      hasAttackedThisTurn: true,
+      frozenTurns: 0,
+    };
+    state.board["0,3"] = {
+      id: "blocked_melee_target",
+      cardId: "sabueso-brasa",
+      controller: 'OPPONENT',
+      position: { x: 0, y: 3 },
+      health: 3,
+      maxHealth: 3,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+
+    state = combatAttack(state, { x: 0, y: 1 }, { x: 0, y: 3 });
+    expect(state.board["0,3"].health).toBe(3);
+    expect(state.board["0,1"].hasAttackedThisTurn).toBe(false);
   });
 
   it('should apply spells like Lluvia de Ceniza and handle spell immunity', () => {

@@ -1,7 +1,8 @@
 import type { GameState, Position, BoardEntity } from '../types/card';
-import { canAfford, playManaCard, summonUnit, moveUnit, combatAttack, playSpell, endTurn, isAdjacent, getDistance } from './engine';
+import { canAfford, canAttackTarget, playManaCard, summonUnit, moveUnit, combatAttack, playSpell, endTurn, isAdjacent, getDistance } from './engine';
 import { CARDS_DB } from './cardsDb';
-import { BOARD_SIZE, COMMANDER_COLUMN, OPPONENT_BACK_ROW, PLAYER_BACK_ROW, isInsideBoard } from './boardConfig';
+import { BOARD_SIZE, COMMANDER_COLUMN, OPPONENT_BACK_ROW, PLAYER_BACK_ROW } from './boardConfig';
+import { getReachablePositions, isBoardObstacle } from './boardPathfinding';
 
 // Spell IDs that target a single enemy
 const ENEMY_TARGET_SPELLS = new Set([
@@ -81,7 +82,7 @@ export function executeAITurn(state: GameState): GameState {
             const isBackrow = y === OPPONENT_BACK_ROW;
             let adjacentAlly = false;
             for (const ent of Object.values(currentState.board)) {
-              if (ent.controller === 'OPPONENT' && isAdjacent(ent.position, pos, false)) {
+              if (!isBoardObstacle(ent) && ent.controller === 'OPPONENT' && isAdjacent(ent.position, pos, false)) {
                 adjacentAlly = true;
                 break;
               }
@@ -116,6 +117,7 @@ export function executeAITurn(state: GameState): GameState {
           if (card.id === 'tejedora-tiempo') {
             const friendlyActed = Object.values(currentState.board).filter(
               ent => ent.controller === 'OPPONENT' &&
+                !isBoardObstacle(ent) &&
                 (ent.hasMovedThisTurn || ent.hasAttackedThisTurn) &&
                 CARDS_DB[ent.cardId]?.type !== 'ESTRUCTURA'
             );
@@ -152,7 +154,7 @@ export function executeAITurn(state: GameState): GameState {
           ent => ent.controller === 'PLAYER' && ent.id !== 'commander-player'
         );
         const opponentUnits = Object.values(currentState.board).filter(
-          ent => ent.controller === 'OPPONENT' && ent.id !== 'commander-opponent'
+          ent => ent.controller === 'OPPONENT' && ent.id !== 'commander-opponent' && !isBoardObstacle(ent)
         );
         if (playerUnits.length > opponentUnits.length) {
           currentState = playSpell(currentState, 'OPPONENT', card.id);
@@ -168,6 +170,7 @@ export function executeAITurn(state: GameState): GameState {
       if (FRIENDLY_TARGET_SPELLS.has(card.id)) {
         const friendlyUnits = Object.values(currentState.board).filter(
           ent => ent.controller === 'OPPONENT' &&
+            !isBoardObstacle(ent) &&
             CARDS_DB[ent.cardId]?.type !== 'ESTRUCTURA' &&
             ent.id !== 'commander-opponent'
         );
@@ -311,6 +314,7 @@ export function executeAITurn(state: GameState): GameState {
     // --- ATTACK PHASE: prioritize attacks before movement ---
     const attackableUnits = Object.values(currentState.board).filter(
       ent => ent.controller === 'OPPONENT' &&
+        !isBoardObstacle(ent) &&
         !ent.hasAttackedThisTurn &&
         ent.frozenTurns === 0 &&
         CARDS_DB[ent.cardId]?.type !== 'ESTRUCTURA'
@@ -319,10 +323,8 @@ export function executeAITurn(state: GameState): GameState {
     let unitActed = false;
 
     for (const unit of attackableUnits) {
-      const cardRef = CARDS_DB[unit.cardId];
-      const diagonal = cardRef?.rulesText.includes('Movimiento Diagonal') || false;
       const adjacentEnemies = Object.values(currentState.board).filter(
-        ent => ent.controller === 'PLAYER' && isAdjacent(unit.position, ent.position, diagonal)
+        ent => ent.controller === 'PLAYER' && canAttackTarget(currentState, unit.position, ent.position)
       );
 
       if (adjacentEnemies.length > 0) {
@@ -343,6 +345,7 @@ export function executeAITurn(state: GameState): GameState {
     // --- MOVEMENT PHASE: move remaining unmoved units toward enemy commander ---
     const movableUnits = Object.values(currentState.board).filter(
       ent => ent.controller === 'OPPONENT' &&
+        !isBoardObstacle(ent) &&
         !ent.hasMovedThisTurn &&
         ent.frozenTurns === 0 &&
         CARDS_DB[ent.cardId]?.type !== 'ESTRUCTURA'
@@ -355,42 +358,17 @@ export function executeAITurn(state: GameState): GameState {
       const playerCmd = findCommander(currentState, 'PLAYER');
       const targetPos = playerCmd ? playerCmd.position : { x: COMMANDER_COLUMN, y: PLAYER_BACK_ROW };
 
-      // Collect possible movement destinations
-      const directions: Position[] = [];
       const cardRef = CARDS_DB[unit.cardId];
-      const orthogonal = [
-        { x: currentPos.x, y: currentPos.y - 1 },
-        { x: currentPos.x - 1, y: currentPos.y },
-        { x: currentPos.x + 1, y: currentPos.y },
-        { x: currentPos.x, y: currentPos.y + 1 },
-      ];
-
-      for (const d of orthogonal) {
-        if (isInsideBoard(d.x, d.y)) {
-          directions.push(d);
-        }
-      }
-
-      // Diagonal movement support for volcanic infiltrator
-      if (cardRef?.rulesText.includes('Movimiento Diagonal')) {
-        const diags = [
-          { x: currentPos.x - 1, y: currentPos.y - 1 },
-          { x: currentPos.x + 1, y: currentPos.y - 1 },
-          { x: currentPos.x - 1, y: currentPos.y + 1 },
-          { x: currentPos.x + 1, y: currentPos.y + 1 },
-        ];
-        for (const d of diags) {
-          if (isInsideBoard(d.x, d.y)) {
-            directions.push(d);
-          }
-        }
-      }
-
-      // Filter to empty tiles
-      const possibleCoords = directions.filter(p => {
-        const key = `${p.x},${p.y}`;
-        return !currentState.board[key];
-      });
+      if (!cardRef) continue;
+      const possibleCoords = getReachablePositions(
+        currentState.board,
+        currentPos,
+        cardRef.movement ?? 1,
+        {
+          allowDiagonal: true,
+          canFly: cardRef.rulesText.includes('Vuelo'),
+        },
+      ).map((candidate) => candidate.position);
 
       if (possibleCoords.length > 0) {
         // Sort by distance to player commander (prefer moving toward it)

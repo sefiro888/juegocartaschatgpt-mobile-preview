@@ -1,540 +1,302 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Sparkles } from '@react-three/drei';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { useGameStore } from '../../store/gameStore';
 import { Card3D } from './Card3D';
+import { FloatingSanctuary } from './FloatingSanctuary';
+import { BoardFoundation, SanctuaryObstacle } from './SanctuaryBoardAssets';
+import { SanctuaryMaterialsProvider, useSanctuaryMaterials } from './SanctuaryMaterials';
 import type { BoardEntity, Position } from '../../types/card';
-import { isAdjacent } from '../../core/engine';
+import { canAttackTarget, isAdjacent } from '../../core/engine';
 import { CARDS_DB } from '../../core/cardsDb';
-import { BOARD_SIZE, COMMANDER_COLUMN, OPPONENT_BACK_ROW, PLAYER_BACK_ROW } from '../../core/boardConfig';
+import { PLAYER_BACK_ROW } from '../../core/boardConfig';
+import {
+  BOARD_CELL_SIZE,
+  BOARD_SURFACE_Y,
+  BOARD_VISUAL_NODES,
+  getBoardVisualNode,
+  getMovementPath,
+  getMovementPathThroughNodes,
+  type BoardVisualNode,
+  type WorldPoint,
+} from '../../core/boardVisualLayout';
+import { getReachablePositions, isBoardObstacle, positionKey } from '../../core/boardPathfinding';
 
-// Grid tile sizes
-const tileSize = 1.25;
-const tileSpacing = 0.15;
-const gridOffset = (BOARD_SIZE - 1) / 2;
+type NodeHighlight = 'summon' | 'move' | 'attack' | 'spell' | null;
 
-// Helper for converting grid x,y to 3D world coordinates
-const getWorldCoords = (x: number, y: number): [number, number, number] => {
-  return [
-    (x - gridOffset) * (tileSize + tileSpacing),
-    0.11,
-    -(y - gridOffset) * (tileSize + tileSpacing),
-  ];
+const HIGHLIGHT_COLORS: Record<Exclude<NodeHighlight, null>, string> = {
+  summon: '#63e6b5',
+  move: '#6bc7ff',
+  attack: '#ff786b',
+  spell: '#70e4ff',
 };
 
-interface Tile3DProps {
-  x: number;
-  y: number;
-  highlight: 'summon' | 'move' | 'attack' | 'spell' | null;
-  onClick: () => void;
+const CAMERA_TARGET: WorldPoint = [0, BOARD_SURFACE_Y, 0.35];
+
+interface TacticalGrid3DProps {
+  nodes: BoardVisualNode[];
+  highlights: Map<string, NodeHighlight>;
+  showFoundation: boolean;
+  useDetailedTextures: boolean;
+  onNodeClick: (node: BoardVisualNode) => void;
+  onNodeHover: (node: BoardVisualNode | null) => void;
 }
 
-// Spectacular 3D tile slab component with pulsing magical glows on hover and targeting
-const Tile3D: React.FC<Tile3DProps> = ({ x, y, highlight, onClick }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-  const coords = getWorldCoords(x, y);
+const TargetMarker: React.FC<{ color: string; radius: number }> = ({ color, radius }) => {
+  const groupRef = useRef<THREE.Group>(null);
 
-  // Smooth frame loop animations using R3F useFrame hook
   useFrame((state) => {
-    if (!meshRef.current) return;
-    const material = meshRef.current.material as THREE.MeshStandardMaterial;
-
-    if (highlight) {
-      // Subtly pulse the stone material itself to show it is active, but keep it dark basalt stone
-      const pulse = 0.05 + Math.sin(state.clock.getElapsedTime() * 4) * 0.03;
-      material.emissiveIntensity = pulse;
-      material.opacity = 1.0;
-    } else if (hovered) {
-      material.emissiveIntensity = 0.25;
-      material.opacity = 1.0;
-    } else {
-      material.emissiveIntensity = 0;
-      material.opacity = 1.0;
-    }
+    if (!groupRef.current) return;
+    const time = state.clock.getElapsedTime();
+    const pulse = 0.94 + Math.sin(time * 3.2) * 0.07;
+    groupRef.current.scale.setScalar(pulse);
+    groupRef.current.rotation.y = time * 0.24;
   });
 
-  // Default color checkers split by board territory
-  let tileColor = '#000000';
-  const isEven = (x + y) % 2 === 0;
-  if (y <= 3) {
-    // Player - Furia: Volcanic warm basalt
-    tileColor = isEven ? '#2d1818' : '#1d1010';
-  } else if (y >= 6) {
-    // Opponent - Arcano: Cosmic cool basalt
-    tileColor = isEven ? '#101c2c' : '#09111c';
-  } else {
-    // Row 3 - Neutral dividing line: Obsidian dark gray
-    tileColor = isEven ? '#17181c' : '#101114';
-  }
-
-  let emissiveColor = '#000000';
-  let highlightColor = '#000000';
-
-  if (highlight === 'summon') {
-    highlightColor = '#10b981'; // Green glow
-    emissiveColor = '#065f46';
-  } else if (highlight === 'move') {
-    highlightColor = '#3b82f6'; // Blue glow
-    emissiveColor = '#1e3a8a';
-  } else if (highlight === 'attack') {
-    highlightColor = '#ef4444'; // Red glow
-    emissiveColor = '#7f1d1d';
-  } else if (highlight === 'spell') {
-    highlightColor = '#06b6d4'; // Cyan glow
-    emissiveColor = '#155e75';
-  } else if (hovered) {
-    emissiveColor = '#6366f1'; // Indigo outline on mouseover
-  }
-
-  const isCommanderSpot =
-    (x === COMMANDER_COLUMN && y === PLAYER_BACK_ROW) ||
-    (x === COMMANDER_COLUMN && y === OPPONENT_BACK_ROW);
-
   return (
-    <group position={coords}>
-      <mesh
-        ref={meshRef}
-        receiveShadow
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHovered(true);
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          setHovered(false);
-        }}
-      >
-        {/* Tile thickness 0.2 to make it feel like a heavy solid block */}
-        <boxGeometry args={[tileSize, 0.2, tileSize]} />
-        <meshStandardMaterial
-          color={tileColor}
-          emissive={highlight ? highlightColor : emissiveColor}
-          emissiveIntensity={highlight ? 0.35 : hovered ? 0.3 : 0}
-          roughness={0.8}
-          metalness={0.15}
-        />
-        {/* Decorative Runic Gold or Indigo cell borders */}
-        <lineSegments>
-          <edgesGeometry args={[new THREE.BoxGeometry(tileSize, 0.2, tileSize)]} />
-          <lineBasicMaterial color={highlight ? highlightColor : hovered ? '#818cf8' : '#1c2230'} linewidth={1.5} />
-        </lineSegments>
+    <group ref={groupRef} position={[0, 0.08, 0]} renderOrder={40}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={40}>
+        <ringGeometry args={[radius * 0.72, radius, 48]} />
+        <meshBasicMaterial color={color} transparent opacity={0.9} side={THREE.DoubleSide} depthWrite={false} depthTest={false} />
       </mesh>
-
-      {/* Glowing magic circle on commander spots */}
-      {isCommanderSpot && (
-        <mesh position={[0, 0.11, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[tileSize * 0.32, tileSize * 0.38, 32]} />
-          <meshBasicMaterial
-            color={y === 0 ? '#ff4d00' : '#8b5cf6'}
-            transparent
-            opacity={0.65}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
-
-      {/* Glowing targeting magic circle on highlighted spots (looks like reference magic circles!) */}
-      {highlight && (
-        <group position={[0, 0.105, 0]}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[tileSize * 0.32, tileSize * 0.38, 32]} />
-            <meshBasicMaterial
-              color={highlightColor}
-              transparent
-              opacity={0.85}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0, tileSize * 0.1, 16]} />
-            <meshBasicMaterial
-              color={highlightColor}
-              transparent
-              opacity={0.4}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        </group>
-      )}
+      <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={41}>
+        <ringGeometry args={[radius * 0.26, radius * 0.31, 32]} />
+        <meshBasicMaterial color="#e9fbff" transparent opacity={0.76} side={THREE.DoubleSide} depthWrite={false} depthTest={false} />
+      </mesh>
     </group>
   );
 };
 
-export const Board3D: React.FC = () => {
-  const {
-    gameState,
-    selectedCardInHand,
-    selectedEntity,
-    selectEntity,
-    setHoveredEntity,
-    summon,
-    move,
-    attack,
-    castSpell,
-  } = useGameStore();
+function getCellColor(node: BoardVisualNode, highlight: NodeHighlight, hovered: boolean): THREE.Color {
+  if (highlight) return new THREE.Color(HIGHLIGHT_COLORS[highlight]);
 
-  const [deathExplosions, setDeathExplosions] = useState<{ id: string; position: Position; faction: string }[]>([]);
-  const prevBoardRef = useRef<Record<string, BoardEntity>>({});
+  const variation = (node.logicalPosition.x * 17 + node.logicalPosition.y * 11) % 5;
+  let color: THREE.Color;
+  if (node.logicalPosition.y <= 1) {
+    color = new THREE.Color(['#edf3f5', '#e2ecef', '#e8f0f2', '#dbe7eb', '#e5edef'][variation]);
+  } else if (node.logicalPosition.y >= 8) {
+    color = new THREE.Color(['#e0eaf0', '#d6e3e9', '#dce7ec', '#cfdee5', '#d9e5ea'][variation]);
+  } else {
+    color = new THREE.Color(['#e8eff1', '#dce7ea', '#e3ebed', '#d4e1e5', '#dfe8eb'][variation]);
+  }
 
-  useEffect(() => {
-    if (!gameState) return;
-    const prevBoard = prevBoardRef.current;
-    const currentBoard = gameState.board;
+  if (hovered) color.lerp(new THREE.Color('#eff8fa'), 0.38);
+  return color;
+}
 
-    // Detect deaths
-    Object.values(prevBoard).forEach(prevEntity => {
-      const isStillAlive = Object.values(currentBoard).some(curr => curr.id === prevEntity.id);
-      if (!isStillAlive) {
-        const card = CARDS_DB[prevEntity.cardId];
-        setDeathExplosions(prev => [
-          ...prev,
-          {
-            id: `${prevEntity.id}_death_${Date.now()}`,
-            position: prevEntity.position,
-            faction: card?.faction || 'FURIA'
-          }
-        ]);
-      }
+const TacticalGrid3D: React.FC<TacticalGrid3DProps> = ({
+  nodes,
+  highlights,
+  showFoundation,
+  useDetailedTextures,
+  onNodeClick,
+  onNodeHover,
+}) => {
+  const { tile } = useSanctuaryMaterials();
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const temporaryObject = useMemo(() => new THREE.Object3D(), []);
+  const tileGeometry = useMemo(() => {
+    const geometry = new RoundedBoxGeometry(BOARD_CELL_SIZE - 0.07, 0.13, BOARD_CELL_SIZE - 0.07, 2, 0.028);
+    const uv = geometry.getAttribute('uv');
+    for (let index = 0; index < uv.count; index += 1) {
+      uv.setXY(index, uv.getX(index) * 0.28 + 0.12, uv.getY(index) * 0.28 + 0.2);
+    }
+    uv.needsUpdate = true;
+    return geometry;
+  }, []);
+  const [hoveredInstanceId, setHoveredInstanceId] = useState<number | null>(null);
+
+  useEffect(() => () => tileGeometry.dispose(), [tileGeometry]);
+
+  useLayoutEffect(() => {
+    if (!meshRef.current) return;
+
+    nodes.forEach((node, index) => {
+      const settle = ((node.logicalPosition.x * 13 + node.logicalPosition.y * 7) % 5 - 2) * 0.0025;
+      const quarterTurn = (node.logicalPosition.x * 3 + node.logicalPosition.y * 5) % 4;
+      temporaryObject.position.set(
+        node.worldPosition[0],
+        node.worldPosition[1] - 0.065 + settle,
+        node.worldPosition[2],
+      );
+      temporaryObject.rotation.set(0, quarterTurn * Math.PI / 2, 0);
+      temporaryObject.scale.set(1, 1, 1);
+      temporaryObject.updateMatrix();
+      meshRef.current?.setMatrixAt(index, temporaryObject.matrix);
+      meshRef.current?.setColorAt(
+        index,
+        getCellColor(node, highlights.get(node.id) ?? null, hoveredInstanceId === index),
+      );
     });
 
-    prevBoardRef.current = { ...currentBoard };
-  }, [gameState]);
+    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+    meshRef.current.computeBoundingBox();
+    meshRef.current.computeBoundingSphere();
+  }, [highlights, hoveredInstanceId, nodes, temporaryObject]);
 
-  if (!gameState) return null;
-
-  // Check highlight states
-  const getTileHighlight = (x: number, y: number): 'summon' | 'move' | 'attack' | 'spell' | null => {
-    const key = `${x},${y}`;
-    const cellOccupied = !!gameState.board[key];
-    const occupant = gameState.board[key];
-
-    // Case 1: Spell Targeting
-    if (selectedCardInHand && selectedCardInHand.type === 'HECHIZO') {
-      if (occupant && !CARDS_DB[occupant.cardId]?.rulesText.includes('Inmune a Hechizos')) {
-        if (selectedCardInHand.id === 'destello-runico') {
-          const commander = Object.values(gameState.board).find(ent => ent.id === 'commander-player');
-          if (commander && isAdjacent(commander.position, { x, y }, false)) {
-            return 'spell';
-          }
-          return null;
-        }
-        return 'spell';
-      }
-      return null;
-    }
-
-    // Case 2: Summoning unit/structure
-    if (selectedCardInHand && (selectedCardInHand.type === 'UNIDAD' || selectedCardInHand.type === 'ESTRUCTURA')) {
-      if (cellOccupied) return null;
-
-      const isBackrow = y === PLAYER_BACK_ROW;
-      let hasAdjacentAlly = false;
-      for (const ent of Object.values(gameState.board)) {
-        if (ent.controller === 'PLAYER' && isAdjacent(ent.position, { x, y }, false)) {
-          hasAdjacentAlly = true;
-          break;
-        }
-      }
-      return (isBackrow || hasAdjacentAlly) ? 'summon' : null;
-    }
-
-    // Case 3: Unit selected on board (Movement or Attack)
-    if (selectedEntity) {
-      if (selectedEntity.frozenTurns > 0) return null;
-      if (selectedEntity.position.x === x && selectedEntity.position.y === y) return null;
-
-      const diagonal = CARDS_DB[selectedEntity.cardId]?.rulesText.includes('Movimiento Diagonal');
-      const adjacent = isAdjacent(selectedEntity.position, { x, y }, diagonal);
-
-      if (adjacent) {
-        if (!cellOccupied && !selectedEntity.hasMovedThisTurn) {
-          return 'move';
-        }
-        if (cellOccupied && occupant.controller === 'OPPONENT' && !selectedEntity.hasAttackedThisTurn) {
-          const refCard = CARDS_DB[selectedEntity.cardId];
-          if (refCard && refCard.type !== 'ESTRUCTURA') {
-            return 'attack';
-          }
-        }
-      }
-    }
-
-    return null;
+  const updateHoveredInstance = (instanceId: number | null) => {
+    if (instanceId === hoveredInstanceId) return;
+    setHoveredInstanceId(instanceId);
+    onNodeHover(instanceId === null ? null : nodes[instanceId] ?? null);
   };
-
-  // Click handler
-  const handleTileClick = (x: number, y: number) => {
-    const highlight = getTileHighlight(x, y);
-    const key = `${x},${y}`;
-    const occupant = gameState.board[key];
-
-    if (highlight === 'summon' && selectedCardInHand) {
-      let enemyPos: Position | undefined = undefined;
-      if (selectedCardInHand.id === 'tejedora-escarcha') {
-        const enemy = Object.values(gameState.board).find(ent => ent.controller === 'OPPONENT');
-        if (enemy) enemyPos = enemy.position;
-      }
-      summon(selectedCardInHand.id, { x, y }, enemyPos);
-    } else if (highlight === 'spell' && selectedCardInHand) {
-      castSpell(selectedCardInHand.id, { x, y });
-    } else if (highlight === 'move' && selectedEntity) {
-      move(selectedEntity.position, { x, y });
-    } else if (highlight === 'attack' && selectedEntity) {
-      attack(selectedEntity.position, { x, y });
-    } else if (occupant && occupant.controller === 'PLAYER') {
-      if (selectedEntity && selectedEntity.id === occupant.id) {
-        selectEntity(null);
-      } else {
-        selectEntity(occupant);
-      }
-    } else {
-      selectEntity(null);
-    }
-  };
-
-  const boardWidth = BOARD_SIZE * (tileSize + tileSpacing) + 0.3;
 
   return (
-    <div className="board3d-wrapper">
-      <Canvas
-        camera={{ position: [0, 10.5, 12.5], fov: 48 }}
-        shadows
-        className="canvas3d"
-        gl={{ alpha: true }}
-        onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+    <group>
+      {showFoundation && <BoardFoundation />}
+
+      <instancedMesh
+        ref={meshRef}
+        args={[tileGeometry, undefined, nodes.length]}
+        castShadow
+        receiveShadow
+        onClick={(event) => {
+          event.stopPropagation();
+          if (event.instanceId === undefined) return;
+          const node = nodes[event.instanceId];
+          if (node) onNodeClick(node);
+        }}
+        onPointerMove={(event) => {
+          event.stopPropagation();
+          updateHoveredInstance(event.instanceId ?? null);
+        }}
+        onPointerOut={(event) => {
+          event.stopPropagation();
+          updateHoveredInstance(null);
+        }}
       >
-        <Stars radius={100} depth={50} count={1500} factor={4} saturation={0.5} fade speed={1} />
-        <Sparkles count={40} scale={12} size={1.2} speed={0.4} color="#00d9ff" />
-        
-        {/* Lights setup for dramatic 3D shadow map */}
-        <ambientLight intensity={0.7} />
-        <directionalLight
-          position={[5, 12, 4]}
-          intensity={1.3}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+        <meshStandardMaterial
+          map={useDetailedTextures ? tile.map : undefined}
+          color="#f5f7f7"
+          emissiveMap={useDetailedTextures ? tile.map : undefined}
+          emissive="#a7bac1"
+          emissiveIntensity={0.22}
+          vertexColors
+          roughness={0.96}
+          metalness={0.025}
         />
-        <pointLight position={[-5, 4, -5]} intensity={0.6} color="#00d9ff" />
-        <pointLight position={[5, 4, 5]} intensity={0.6} color="#ff3e3e" />
+      </instancedMesh>
 
-        {/* ═══ OUTER FRAME BOARD BEZEL (PHYSICAL BOARD GAME FEEL) ═══ */}
-        {/* Step 1: Bottom dark stone slab */}
-        <mesh position={[0, -0.26, 0]} receiveShadow>
-          <boxGeometry args={[boardWidth + 0.6, 0.28, boardWidth + 0.6]} />
-          <meshStandardMaterial color="#080c10" roughness={0.9} />
-        </mesh>
-        
-        {/* Step 2: Middle dark blue stone tier */}
-        <mesh position={[0, -0.12, 0]} receiveShadow>
-          <boxGeometry args={[boardWidth + 0.2, 0.16, boardWidth + 0.2]} />
-          <meshStandardMaterial color="#0f141d" roughness={0.8} metalness={0.2} />
-        </mesh>
-        
-        {/* Step 3: Top Bezel with glowing trim */}
-        <mesh position={[0, -0.04, 0]} receiveShadow>
-          <boxGeometry args={[boardWidth, 0.08, boardWidth]} />
-          <meshStandardMaterial color="#1a202c" roughness={0.7} metalness={0.5} />
-          <lineSegments>
-            <edgesGeometry args={[new THREE.BoxGeometry(boardWidth, 0.08, boardWidth)]} />
-            <lineBasicMaterial color="#6366f1" opacity={0.3} transparent />
-          </lineSegments>
-        </mesh>
-
-        {/* Pulsing subfloor under the spaced grid tiles */}
-        <SubFloor boardWidth={boardWidth} />
-
-        {/* Outer Corner Pillars for both factions */}
-        <CornerPillars boardWidth={boardWidth} />
-
-        {/* Floating Citadel rocky island base underneath */}
-        <FloatingRocks boardWidth={boardWidth} />
-
-        {/* Castle towers flanking the board sides */}
-        <CastleTowers boardWidth={boardWidth} />
-
-        {/* Player Gothic Invocations Portal (Furia - Warm/Magma) */}
-        <GothicPortal position={[0, 0.05, boardWidth / 2 + 0.35]} rotation={[0, Math.PI, 0]} isFuria={true} />
-
-        {/* Opponent Gothic Invocations Portal (Arcano - Cool/Celestial) */}
-        <GothicPortal position={[0, 0.05, -boardWidth / 2 - 0.35]} rotation={[0, 0, 0]} isFuria={false} />
-
-        {/* Runic Stone Bridges connecting to Portals */}
-        <PortalBridges boardWidth={boardWidth} />
-
-        {/* Floating Mana Crystals bobbing in the void */}
-        <FloatingCrystal position={[-boardWidth / 2 - 1.2, 0.8, -1]} color="#8b5cf6" offset={0} />
-        <FloatingCrystal position={[boardWidth / 2 + 1.2, 1.0, -2]} color="#00e5ff" offset={1.5} />
-        <FloatingCrystal position={[-boardWidth / 2 - 1.5, 0.6, 2]} color="#ff4d00" offset={3.0} />
-        <FloatingCrystal position={[boardWidth / 2 + 1.5, 0.8, 1]} color="#ec4899" offset={4.5} />
-
-        {/* Board grid tiles */}
-        <group>
-          {Array.from({ length: BOARD_SIZE }).map((_, x) =>
-            Array.from({ length: BOARD_SIZE }).map((_, y) => {
-              const highlight = getTileHighlight(x, y);
-              return (
-                <Tile3D
-                  key={`${x},${y}`}
-                  x={x}
-                  y={y}
-                  highlight={highlight}
-                  onClick={() => handleTileClick(x, y)}
-                />
-              );
-            })
-          )}
-        </group>
-
-        {/* Board Units/Entities */}
-        {Object.values(gameState.board).map((entity) => {
-          // Render Neutral Obstacles differently as actual 3D shapes
-          if (entity.cardId.startsWith('obstaculo-')) {
-            return (
-              <Obstacle3D
-                key={entity.id}
-                entity={entity}
-              />
-            );
-          }
-
-          const isHidden = !isEntityVisible(entity, gameState.board);
-          return (
-            <Card3D
-              key={entity.id}
-              entity={entity}
-              isSelected={selectedEntity?.id === entity.id}
-              isHidden={isHidden}
-              onClick={() => handleTileClick(entity.position.x, entity.position.y)}
-              onHover={(h) => setHoveredEntity(h ? entity : null)}
-            />
-          );
-        })}
-
-        {/* Particle Death Explosions */}
-        {deathExplosions.map(exp => (
-          <DeathExplosion3D
-            key={exp.id}
-            position={exp.position}
-            faction={exp.faction}
-            onComplete={() => {
-              setDeathExplosions(prev => prev.filter(e => e.id !== exp.id));
-            }}
-          />
-        ))}
-
-        <OrbitControls
-          enablePan={false}
-          minPolarAngle={0.4}
-          maxPolarAngle={1.1}
-          minDistance={7}
-          maxDistance={18}
-        />
-      </Canvas>
-
-      <style>{`
-        .board3d-wrapper {
-          flex: 1;
-          position: relative;
-          background: radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
-                      radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
-                      radial-gradient(circle at 50% 50%, #0d0a21 0%, #020106 100%);
-          border-radius: 12px;
-          border: 1.2px solid rgba(255, 255, 255, 0.08);
-          overflow: hidden;
-          box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.95);
-        }
-        .canvas3d {
-          width: 100%;
-          height: 100%;
-        }
-      `}</style>
-    </div>
+      {nodes.map((node) => {
+        const highlight = highlights.get(node.id) ?? null;
+        if (!highlight) return null;
+        return (
+          <group key={`${node.id}-${highlight}`} position={node.worldPosition}>
+            <TargetMarker color={HIGHLIGHT_COLORS[highlight]} radius={node.visualRadius * 0.78} />
+          </group>
+        );
+      })}
+    </group>
   );
 };
 
+interface ValidRouteProps {
+  points: WorldPoint[];
+  highlight: Exclude<NodeHighlight, null>;
+}
+
+const ValidRoute: React.FC<ValidRouteProps> = ({ points, highlight }) => {
+  const liftedPoints = points.map(([x, y, z]) => [x, y + 0.045, z] as WorldPoint);
+  return (
+    <Line
+      points={liftedPoints}
+      color={HIGHLIGHT_COLORS[highlight]}
+      lineWidth={1.55}
+      transparent
+      opacity={0.58}
+      dashed
+      dashSize={0.22}
+      gapSize={0.14}
+      depthWrite={false}
+    />
+  );
+};
+
+interface CanvasHealthMonitorProps {
+  onContextLost: () => void;
+  onContextRestored: () => void;
+}
+
+const CanvasHealthMonitor: React.FC<CanvasHealthMonitorProps> = ({ onContextLost, onContextRestored }) => {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const handleLost = (event: Event) => {
+      event.preventDefault();
+      onContextLost();
+    };
+    canvas.addEventListener('webglcontextlost', handleLost);
+    canvas.addEventListener('webglcontextrestored', onContextRestored);
+    return () => {
+      canvas.removeEventListener('webglcontextlost', handleLost);
+      canvas.removeEventListener('webglcontextrestored', onContextRestored);
+    };
+  }, [gl, onContextLost, onContextRestored]);
+
+  return null;
+};
+
 interface DeathExplosion3DProps {
-  position: Position;
+  worldPosition: WorldPoint;
   faction: string;
   onComplete: () => void;
 }
 
-const DeathExplosion3D: React.FC<DeathExplosion3DProps> = ({ position, faction, onComplete }) => {
+const DeathExplosion3D: React.FC<DeathExplosion3DProps> = ({ worldPosition, faction, onComplete }) => {
   const pointsRef = useRef<THREE.Points>(null);
-  const startTime = useRef(Date.now());
-  const duration = 750; // 750ms
-
-  // Position on the 3D board
-  const posX = (position.x - gridOffset) * (tileSize + tileSpacing);
-  const posZ = -(position.y - gridOffset) * (tileSize + tileSpacing);
-
-  const particleCount = 35;
-
+  const elapsedRef = useRef(0);
+  const particleCount = 28;
   const [positions, velocities] = useMemo(() => {
-    const pos = new Float32Array(particleCount * 3);
-    const vel = new Float32Array(particleCount * 3);
-    for (let i = 0; i < particleCount; i++) {
-      // Start at center
-      pos[i * 3] = posX;
-      pos[i * 3 + 1] = 0.5; // standee center height
-      pos[i * 3 + 2] = posZ;
+    const nextPositions = new Float32Array(particleCount * 3);
+    const nextVelocities = new Float32Array(particleCount * 3);
 
-      // Random spherical velocity
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(Math.random() * 2 - 1);
-      const speed = 1.2 + Math.random() * 2.2;
-
-      vel[i * 3] = Math.sin(phi) * Math.cos(theta) * speed;
-      vel[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * speed + 1.2; // upwards bias
-      vel[i * 3 + 2] = Math.cos(phi) * speed;
+    for (let index = 0; index < particleCount; index += 1) {
+      const theta = (index / particleCount) * Math.PI * 2;
+      const spread = 0.65 + ((index * 17) % 11) / 10;
+      nextPositions[index * 3] = 0;
+      nextPositions[index * 3 + 1] = 0.7;
+      nextPositions[index * 3 + 2] = 0;
+      nextVelocities[index * 3] = Math.cos(theta) * spread;
+      nextVelocities[index * 3 + 1] = 1.1 + ((index * 7) % 9) / 7;
+      nextVelocities[index * 3 + 2] = Math.sin(theta) * spread;
     }
-    return [pos, vel];
-  }, [posX, posZ]);
 
-  const color = faction === 'FURIA' ? '#ff3e3e' : '#00d9ff';
+    return [nextPositions, nextVelocities];
+  }, []);
 
   useFrame((_, delta) => {
-    const elapsed = Date.now() - startTime.current;
-    if (elapsed >= duration) {
+    elapsedRef.current += delta;
+    if (elapsedRef.current >= 0.72) {
       onComplete();
       return;
     }
 
-    if (pointsRef.current) {
-      const geo = pointsRef.current.geometry;
-      const posAttr = geo.getAttribute('position') as THREE.BufferAttribute;
-      
-      for (let i = 0; i < particleCount; i++) {
-        posAttr.array[i * 3] += velocities[i * 3] * delta;
-        posAttr.array[i * 3 + 1] += velocities[i * 3 + 1] * delta;
-        posAttr.array[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+    const positionAttribute = pointsRef.current?.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+    if (!positionAttribute) return;
 
-        // Gravity pull
-        velocities[i * 3 + 1] -= 3.5 * delta;
-      }
-      posAttr.needsUpdate = true;
+    for (let index = 0; index < particleCount; index += 1) {
+      const offset = index * 3;
+      positionAttribute.array[offset] += velocities[offset] * delta;
+      positionAttribute.array[offset + 1] += velocities[offset + 1] * delta;
+      positionAttribute.array[offset + 2] += velocities[offset + 2] * delta;
+      velocities[offset + 1] -= 3.1 * delta;
     }
+    positionAttribute.needsUpdate = true;
   });
 
   return (
-    <points ref={pointsRef}>
+    <points ref={pointsRef} position={worldPosition}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        color={color}
-        size={0.15}
+        color={faction === 'FURIA' ? '#ffad66' : '#83ddff'}
+        size={0.13}
         transparent
-        opacity={0.85}
+        opacity={0.82}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
       />
@@ -542,292 +304,492 @@ const DeathExplosion3D: React.FC<DeathExplosion3DProps> = ({ position, faction, 
   );
 };
 
+interface AttackAnimation3DProps {
+  from: WorldPoint;
+  to: WorldPoint;
+  faction: string;
+  onComplete: () => void;
+}
+
+const AttackAnimation3D: React.FC<AttackAnimation3DProps> = ({ from, to, faction, onComplete }) => {
+  const boltRef = useRef<THREE.Mesh>(null);
+  const impactRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const elapsedRef = useRef(0);
+  const completedRef = useRef(false);
+  const [start, end, arc] = useMemo(() => {
+    const nextStart = new THREE.Vector3(from[0], from[1] + 1.05, from[2]);
+    const nextEnd = new THREE.Vector3(to[0], to[1] + 1.02, to[2]);
+    const midpoint = nextStart.clone().lerp(nextEnd, 0.5);
+    midpoint.y += 0.58;
+    return [nextStart, nextEnd, new THREE.QuadraticBezierCurve3(nextStart, midpoint, nextEnd)];
+  }, [from, to]);
+  const color = faction === 'FURIA' ? '#ff9d55' : '#72d7ff';
+
+  useFrame((_, delta) => {
+    elapsedRef.current += delta;
+    const progress = Math.min(1, elapsedRef.current / 0.58);
+    const travel = Math.min(1, progress / 0.56);
+    const impact = THREE.MathUtils.smoothstep(progress, 0.42, 0.96);
+
+    if (boltRef.current) {
+      boltRef.current.visible = travel < 1;
+      boltRef.current.position.copy(arc.getPoint(travel));
+      boltRef.current.scale.setScalar(0.75 + Math.sin(travel * Math.PI) * 0.52);
+    }
+    if (impactRef.current) {
+      impactRef.current.visible = impact > 0;
+      impactRef.current.scale.setScalar(0.35 + impact * 1.9);
+      impactRef.current.rotation.z += delta * 6.5;
+    }
+    if (lightRef.current) lightRef.current.intensity = Math.max(0, Math.sin(impact * Math.PI) * 3.5);
+
+    if (progress >= 1 && !completedRef.current) {
+      completedRef.current = true;
+      onComplete();
+    }
+  });
+
+  return (
+    <group>
+      <Line
+        points={[start, end]}
+        color={color}
+        lineWidth={1.5}
+        transparent
+        opacity={0.3}
+        dashed
+        dashSize={0.2}
+        gapSize={0.16}
+        depthWrite={false}
+      />
+      <mesh ref={boltRef}>
+        <sphereGeometry args={[0.13, 14, 14]} />
+        <meshBasicMaterial color={color} transparent opacity={0.96} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      <group ref={impactRef} position={end} visible={false}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.28, 0.42, 36]} />
+          <meshBasicMaterial color={color} transparent opacity={0.82} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[0.18, 14, 14]} />
+          <meshBasicMaterial color="#fff4dc" transparent opacity={0.76} blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+      </group>
+      <pointLight ref={lightRef} position={end} color={color} intensity={0} distance={4.4} decay={2} />
+    </group>
+  );
+};
+
 function isEntityVisible(entity: BoardEntity, board: Record<string, BoardEntity>): boolean {
-  if (entity.controller === 'PLAYER') return true;
-  if (entity.cardId.startsWith('obstaculo-')) return true; // Obstacles are always visible!
-  
-  // A tile is visible if it is Y <= 2 (our side) OR within distance 2 of any player entity
+  if (entity.controller === 'PLAYER' || entity.cardId.startsWith('obstaculo-')) return true;
   if (entity.position.y <= 2) return true;
 
-  const playerEntities = Object.values(board).filter((e) => e.controller === 'PLAYER');
-  return playerEntities.some((pe) => {
-    const dx = Math.abs(pe.position.x - entity.position.x);
-    const dy = Math.abs(pe.position.y - entity.position.y);
-    return (dx + dy) <= 2;
-  });
+  return Object.values(board)
+    .filter((candidate) => candidate.controller === 'PLAYER')
+    .some((playerEntity) => {
+      const deltaX = Math.abs(playerEntity.position.x - entity.position.x);
+      const deltaY = Math.abs(playerEntity.position.y - entity.position.y);
+      return deltaX + deltaY <= 2;
+    });
 }
 
-interface Obstacle3DProps {
-  entity: BoardEntity;
-}
+const ResponsiveCamera: React.FC = () => {
+  const { camera, size } = useThree();
 
-const Obstacle3D: React.FC<Obstacle3DProps> = ({ entity }) => {
-  const posX = (entity.position.x - gridOffset) * (tileSize + tileSpacing);
-  const posZ = -(entity.position.y - gridOffset) * (tileSize + tileSpacing);
-  
-  const isLava = entity.cardId === 'obstaculo-lava';
-  
-  return (
-    <group position={[posX, 0.15, posZ]}>
-      {isLava ? (
-        // Lava Crater: Volcanic cylinder with glowing lava core & warm rising sparkles
-        <group>
-          <mesh castShadow receiveShadow>
-            <cylinderGeometry args={[0.7, 0.8, 0.3, 16]} />
-            <meshStandardMaterial color="#1e1310" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 0.16, 0]}>
-            <cylinderGeometry args={[0.55, 0.55, 0.02, 16]} />
-            <meshStandardMaterial color="#ff3e3e" emissive="#ef4444" emissiveIntensity={2.5} />
-          </mesh>
-          <Sparkles count={6} scale={0.6} size={1.2} speed={0.8} color="#ff5a00" position={[0, 0.2, 0]} />
-        </group>
-      ) : (
-        // Runic Pillar: Stone column with glowing cyan details & cold sparkles
-        <group>
-          <mesh castShadow receiveShadow position={[0, 0.6, 0]}>
-            <boxGeometry args={[0.5, 1.2, 0.5]} />
-            <meshStandardMaterial color="#1f2937" roughness={0.8} metalness={0.1} />
-            <mesh position={[0, 0.61, 0]}>
-              <boxGeometry args={[0.2, 0.05, 0.52]} />
-              <meshStandardMaterial color="#00d9ff" emissive="#06b6d4" emissiveIntensity={3} />
-            </mesh>
-            <mesh position={[0, 0.2, 0.26]}>
-              <boxGeometry args={[0.1, 0.6, 0.01]} />
-              <meshStandardMaterial color="#00d9ff" emissive="#06b6d4" emissiveIntensity={2} />
-            </mesh>
-          </mesh>
-          <Sparkles count={5} scale={0.5} size={1.0} speed={0.5} color="#00e5ff" position={[0, 0.8, 0]} />
-        </group>
-      )}
-    </group>
-  );
-};
+  useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera) || size.height === 0) return;
+    const aspect = size.width / size.height;
 
-const SubFloor: React.FC<{ boardWidth: number }> = ({ boardWidth }) => {
-  const matFuria = useRef<THREE.MeshBasicMaterial>(null);
-  const matArcano = useRef<THREE.MeshBasicMaterial>(null);
-  
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    if (matFuria.current) {
-      // Slow pulse magma under the cracks
-      const pulse = 0.65 + Math.sin(time * 1.5) * 0.35;
-      matFuria.current.color.setRGB(pulse * 1.0, pulse * 0.2, 0.0);
+    if (aspect < 0.82) {
+      camera.position.set(0, 24.5, 31);
+      camera.fov = 52;
+    } else if (aspect < 1.35) {
+      camera.position.set(8.8, 20.5, 28);
+      camera.fov = 47;
+    } else {
+      camera.position.set(11.8, 19.2, 23.5);
+      camera.fov = 43;
     }
-    if (matArcano.current) {
-      // Slow pulse arcane mana
-      const pulse = 0.65 + Math.sin(time * 1.8) * 0.35;
-      matArcano.current.color.setRGB(0.0, pulse * 0.55, pulse * 1.0);
+
+    camera.lookAt(...CAMERA_TARGET);
+    camera.updateProjectionMatrix();
+  }, [camera, size.height, size.width]);
+
+  return null;
+};
+
+export const Board3D: React.FC = () => {
+  const {
+    gameState,
+    selectedCardInHand,
+    selectedEntity,
+    hoveredEntity,
+    selectEntity,
+    setHoveredEntity,
+    summon,
+    move,
+    attack,
+    castSpell,
+  } = useGameStore();
+  const [deathExplosions, setDeathExplosions] = useState<Array<{ id: string; position: Position; faction: string }>>([]);
+  const [movementAnimationRoutes, setMovementAnimationRoutes] = useState<Record<string, Position[]>>({});
+  const [attackAnimations, setAttackAnimations] = useState<Array<{
+    id: string;
+    attackerId: string;
+    targetId: string;
+    from: Position;
+    to: Position;
+    faction: string;
+  }>>([]);
+  const [hoveredTacticalNodeId, setHoveredTacticalNodeId] = useState<string | null>(null);
+  const [canvasStatus, setCanvasStatus] = useState<'ready' | 'lost'>('ready');
+  const previousBoardRef = useRef<Record<string, BoardEntity>>({});
+
+  useEffect(() => {
+    if (!gameState) return;
+    const previousBoard = previousBoardRef.current;
+    const currentIds = new Set(Object.values(gameState.board).map((entity) => entity.id));
+
+    for (const previousEntity of Object.values(previousBoard)) {
+      if (!currentIds.has(previousEntity.id)) {
+        const card = CARDS_DB[previousEntity.cardId];
+        setDeathExplosions((current) => [
+          ...current,
+          {
+            id: `${previousEntity.id}-death-${Date.now()}`,
+            position: previousEntity.position,
+            faction: card?.faction ?? 'FURIA',
+          },
+        ]);
+      }
     }
-  });
 
-  return (
-    <group position={[0, 0.015, 0]}>
-      {/* Furia side (magma) - occupying player's half of the board */}
-      <mesh position={[0, 0, boardWidth / 4]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[boardWidth, boardWidth / 2]} />
-        <meshBasicMaterial ref={matFuria} color="#ff3e00" />
-      </mesh>
-      {/* Arcano side (celestial) - occupying opponent's half of the board */}
-      <mesh position={[0, 0, -boardWidth / 4]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[boardWidth, boardWidth / 2]} />
-        <meshBasicMaterial ref={matArcano} color="#00bfff" />
-      </mesh>
-    </group>
-  );
-};
+    previousBoardRef.current = { ...gameState.board };
+  }, [gameState]);
 
-const CornerPillars: React.FC<{ boardWidth: number }> = ({ boardWidth }) => {
-  const half = boardWidth / 2;
-  const positions: [number, number, number][] = [
-    [-half, 0.1, -half], // Arcano corner 1
-    [half, 0.1, -half],  // Arcano corner 2
-    [-half, 0.1, half],  // Furia corner 1
-    [half, 0.1, half],   // Furia corner 2
-  ];
-
-  return (
-    <>
-      {positions.map((pos, idx) => (
-        <group key={idx} position={pos}>
-          {/* Main heavy stone/metal pillar body */}
-          <mesh castShadow receiveShadow position={[0, 0.2, 0]}>
-            <boxGeometry args={[0.3, 0.6, 0.3]} />
-            <meshStandardMaterial color="#2d3748" roughness={0.8} metalness={0.6} />
-          </mesh>
-          {/* Glowing faction crystal tip */}
-          <mesh position={[0, 0.52, 0]}>
-            <boxGeometry args={[0.22, 0.06, 0.22]} />
-            <meshStandardMaterial
-              color={idx < 2 ? '#00e5ff' : '#ff4d00'}
-              emissive={idx < 2 ? '#00e5ff' : '#ff4d00'}
-              emissiveIntensity={2}
-            />
-          </mesh>
-        </group>
-      ))}
-    </>
-  );
-};
-
-const FloatingRocks: React.FC<{ boardWidth: number }> = ({ boardWidth }) => {
-  return (
-    <group position={[0, -0.65, 0]}>
-      {/* Main central rocky island body */}
-      <mesh castShadow receiveShadow>
-        <coneGeometry args={[boardWidth / 2 + 0.3, 1.1, 5]} />
-        <meshStandardMaterial color="#181a22" roughness={0.9} flatShading />
-      </mesh>
-      {/* Surrounding floating stones shards */}
-      <mesh position={[-boardWidth / 2 - 1.2, -0.2, -boardWidth / 2 - 1.2]} rotation={[0.4, 0.2, 0.1]}>
-        <dodecahedronGeometry args={[0.45]} />
-        <meshStandardMaterial color="#111216" roughness={0.9} flatShading />
-      </mesh>
-      <mesh position={[boardWidth / 2 + 1.4, -0.4, boardWidth / 2 + 0.9]} rotation={[0.2, 0.5, 0.9]}>
-        <dodecahedronGeometry args={[0.55]} />
-        <meshStandardMaterial color="#111216" roughness={0.9} flatShading />
-      </mesh>
-      <mesh position={[boardWidth / 2 + 1.3, -0.1, -boardWidth / 2 - 0.7]} rotation={[0.8, 0.1, 0.3]}>
-        <dodecahedronGeometry args={[0.35]} />
-        <meshStandardMaterial color="#111216" roughness={0.9} flatShading />
-      </mesh>
-    </group>
-  );
-};
-
-const CastleTowers: React.FC<{ boardWidth: number }> = ({ boardWidth }) => {
-  const half = boardWidth / 2;
-  return (
-    <group>
-      {/* Left Castle Tower */}
-      <group position={[-half - 0.5, 0.3, 0]}>
-        <mesh castShadow receiveShadow>
-          <cylinderGeometry args={[0.3, 0.4, 1.0, 8]} />
-          <meshStandardMaterial color="#1b1e26" roughness={0.9} />
-        </mesh>
-        <mesh position={[0, 0.6, 0]}>
-          <coneGeometry args={[0.4, 0.35, 8]} />
-          <meshStandardMaterial color="#0b0d10" roughness={0.9} />
-        </mesh>
-      </group>
-      {/* Right Castle Tower */}
-      <group position={[half + 0.5, 0.3, 0]}>
-        <mesh castShadow receiveShadow>
-          <cylinderGeometry args={[0.3, 0.4, 1.0, 8]} />
-          <meshStandardMaterial color="#1b1e26" roughness={0.9} />
-        </mesh>
-        <mesh position={[0, 0.6, 0]}>
-          <coneGeometry args={[0.4, 0.35, 8]} />
-          <meshStandardMaterial color="#0b0d10" roughness={0.9} />
-        </mesh>
-      </group>
-    </group>
-  );
-};
-
-interface GothicPortalProps {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  isFuria: boolean;
-}
-
-const GothicPortal: React.FC<GothicPortalProps> = ({ position, rotation, isFuria }) => {
-  const portalMat = useRef<THREE.MeshStandardMaterial>(null);
-  
-  useFrame((state) => {
-    if (portalMat.current) {
-      const t = state.clock.getElapsedTime();
-      portalMat.current.emissiveIntensity = 1.8 + Math.sin(t * 3.5) * 0.45;
+  const movementRoutesByKey = useMemo(() => {
+    const routes = new Map<string, Position[]>();
+    if (!gameState || !selectedEntity || selectedEntity.hasMovedThisTurn || selectedEntity.frozenTurns > 0) {
+      return routes;
     }
-  });
 
-  const color = isFuria ? '#ff4d00' : '#8b5cf6';
-  
+    const card = CARDS_DB[selectedEntity.cardId];
+    if (!card || card.type === 'ESTRUCTURA') return routes;
+
+    for (const reachable of getReachablePositions(
+      gameState.board,
+      selectedEntity.position,
+      card.movement ?? 1,
+      {
+        allowDiagonal: true,
+        canFly: card.rulesText.includes('Vuelo'),
+      },
+    )) {
+      routes.set(positionKey(reachable.position), reachable.path);
+    }
+
+    return routes;
+  }, [gameState, selectedEntity]);
+
+  const highlightByNodeId = useMemo(() => {
+    const highlights = new Map<string, NodeHighlight>();
+    if (!gameState) return highlights;
+
+    for (const node of BOARD_VISUAL_NODES) {
+      const { x, y } = node.logicalPosition;
+      const key = positionKey(node.logicalPosition);
+      const occupant = gameState.board[key];
+      let highlight: NodeHighlight = null;
+
+      if (selectedCardInHand?.type === 'HECHIZO') {
+        if (occupant && !isBoardObstacle(occupant) && !CARDS_DB[occupant.cardId]?.rulesText.includes('Inmune a Hechizos')) {
+          if (selectedCardInHand.id === 'destello-runico') {
+            const commander = Object.values(gameState.board).find((entity) => entity.id === 'commander-player');
+            if (commander && isAdjacent(commander.position, node.logicalPosition, false)) highlight = 'spell';
+          } else {
+            highlight = 'spell';
+          }
+        }
+      } else if (selectedCardInHand && (selectedCardInHand.type === 'UNIDAD' || selectedCardInHand.type === 'ESTRUCTURA')) {
+        if (!occupant) {
+          const isBackRow = y === PLAYER_BACK_ROW;
+          const hasAdjacentAlly = Object.values(gameState.board).some(
+            (entity) => entity.controller === 'PLAYER' && isAdjacent(entity.position, node.logicalPosition, false),
+          );
+          if (isBackRow || hasAdjacentAlly) highlight = 'summon';
+        }
+      } else if (selectedEntity && selectedEntity.frozenTurns === 0) {
+        const isCurrentNode = selectedEntity.position.x === x && selectedEntity.position.y === y;
+
+        if (!isCurrentNode) {
+          if (!occupant && movementRoutesByKey.has(key)) {
+            highlight = 'move';
+          } else if (
+            occupant?.controller === 'OPPONENT' &&
+            !isBoardObstacle(occupant) &&
+            canAttackTarget(gameState, selectedEntity.position, node.logicalPosition) &&
+            !selectedEntity.hasAttackedThisTurn &&
+            CARDS_DB[selectedEntity.cardId]?.type !== 'ESTRUCTURA'
+          ) {
+            highlight = 'attack';
+          }
+        }
+      }
+
+      highlights.set(node.id, highlight);
+    }
+
+    return highlights;
+  }, [gameState, movementRoutesByKey, selectedCardInHand, selectedEntity]);
+
+  if (!gameState) return null;
+
+  const boardDebugMode = new URLSearchParams(window.location.search).get('sanctuaryBoardDebug');
+  const showBoardFoundation = boardDebugMode !== 'tiles' && boardDebugMode !== 'plain';
+  const showObstacles = boardDebugMode !== 'tiles'
+    && boardDebugMode !== 'plain'
+    && boardDebugMode !== 'foundation';
+  const useDetailedTextures = boardDebugMode !== 'plain';
+
+  const handleNodeClick = (position: Position) => {
+    const node = getBoardVisualNode(position);
+    const highlight = highlightByNodeId.get(node.id) ?? null;
+    const key = positionKey(position);
+    const occupant = gameState.board[key];
+
+    if (highlight === 'summon' && selectedCardInHand) {
+      let battlecryTarget: Position | undefined;
+      if (selectedCardInHand.id === 'tejedora-escarcha') {
+        battlecryTarget = Object.values(gameState.board).find(
+          (entity) => entity.controller === 'OPPONENT' && !isBoardObstacle(entity),
+        )?.position;
+      }
+      summon(selectedCardInHand.id, position, battlecryTarget);
+    } else if (highlight === 'spell' && selectedCardInHand) {
+      castSpell(selectedCardInHand.id, position);
+    } else if (highlight === 'move' && selectedEntity) {
+      const logicalRoute = movementRoutesByKey.get(key);
+      if (logicalRoute) {
+        setMovementAnimationRoutes((current) => ({
+          ...current,
+          [selectedEntity.id]: logicalRoute.map((routePosition) => ({ ...routePosition })),
+        }));
+      }
+      move(selectedEntity.position, position);
+    } else if (highlight === 'attack' && selectedEntity) {
+      const attackerCard = CARDS_DB[selectedEntity.cardId];
+      if (occupant && attackerCard) {
+        setAttackAnimations((current) => [
+          ...current,
+          {
+            id: `${selectedEntity.id}-attack-${Date.now()}`,
+            attackerId: selectedEntity.id,
+            targetId: occupant.id,
+            from: { ...selectedEntity.position },
+            to: { ...position },
+            faction: attackerCard.faction,
+          },
+        ]);
+      }
+      attack(selectedEntity.position, position);
+    } else if (occupant?.controller === 'PLAYER') {
+      selectEntity(selectedEntity?.id === occupant.id ? null : occupant);
+    } else {
+      selectEntity(null);
+    }
+  };
+
+  const activeRoutes = selectedEntity && hoveredTacticalNodeId
+    ? BOARD_VISUAL_NODES.flatMap((node) => {
+        if (node.id !== hoveredTacticalNodeId) return [];
+        const highlight = highlightByNodeId.get(node.id);
+        if (highlight !== 'move' && highlight !== 'attack') return [];
+        const logicalRoute = movementRoutesByKey.get(positionKey(node.logicalPosition));
+        return [{
+          id: `${selectedEntity.id}-${node.id}`,
+          highlight,
+          points: highlight === 'move' && logicalRoute
+            ? getMovementPathThroughNodes(logicalRoute)
+            : getMovementPath(selectedEntity.position, node.logicalPosition),
+        }];
+      })
+    : [];
+
   return (
-    <group position={position} rotation={rotation}>
-      {/* Left Gothic Pillar */}
-      <mesh castShadow receiveShadow position={[-0.7, 0.85, 0]}>
-        <boxGeometry args={[0.18, 1.7, 0.22]} />
-        <meshStandardMaterial color="#2d3748" roughness={0.8} />
-      </mesh>
-      {/* Right Gothic Pillar */}
-      <mesh castShadow receiveShadow position={[0.7, 0.85, 0]}>
-        <boxGeometry args={[0.18, 1.7, 0.22]} />
-        <meshStandardMaterial color="#2d3748" roughness={0.8} />
-      </mesh>
-      {/* Arch Top Header */}
-      <mesh castShadow receiveShadow position={[0, 1.7, 0]}>
-        <boxGeometry args={[1.58, 0.18, 0.3]} />
-        <meshStandardMaterial color="#1a202c" roughness={0.8} />
-      </mesh>
-      {/* Arch Top Crown */}
-      <mesh castShadow receiveShadow position={[0, 1.88, 0]}>
-        <coneGeometry args={[0.26, 0.18, 4]} />
-        <meshStandardMaterial color="#2d3748" roughness={0.8} />
-      </mesh>
-      {/* Swirling Magical Portal Plane inside */}
-      <mesh position={[0, 0.85, 0.015]}>
-        <planeGeometry args={[1.2, 1.5]} />
-        <meshStandardMaterial
-          ref={portalMat}
-          color={color}
-          emissive={color}
-          emissiveIntensity={1.8}
-          transparent
-          opacity={0.7}
+    <div
+      className="board3d-wrapper"
+      data-testid="floating-sanctuary-board"
+      data-canvas-status={canvasStatus}
+      data-valid-moves={movementRoutesByKey.size}
+      data-valid-move-positions={[...movementRoutesByKey.keys()].join(' ')}
+    >
+      <Canvas
+        camera={{ position: [11.8, 19.2, 23.5], fov: 43, near: 0.1, far: 170 }}
+        shadows={{ type: THREE.PCFShadowMap }}
+        dpr={[1, 1.25]}
+        className="canvas3d"
+        gl={{
+          antialias: true,
+          alpha: false,
+          stencil: false,
+          preserveDrawingBuffer: false,
+          powerPreference: 'high-performance',
+        }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.08;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+        }}
+      >
+        <CanvasHealthMonitor
+          onContextLost={() => setCanvasStatus('lost')}
+          onContextRestored={() => setCanvasStatus('ready')}
         />
-      </mesh>
-      <Sparkles count={6} scale={1.1} size={1.2} speed={0.5} color={color} position={[0, 0.85, 0]} />
-    </group>
-  );
-};
+        <ResponsiveCamera />
+        <SanctuaryMaterialsProvider enabled={useDetailedTextures}>
+          <FloatingSanctuary />
 
-interface FloatingCrystalProps {
-  position: [number, number, number];
-  color: string;
-  offset: number;
-}
+          <TacticalGrid3D
+            nodes={BOARD_VISUAL_NODES}
+            highlights={highlightByNodeId}
+            showFoundation={showBoardFoundation}
+            useDetailedTextures={useDetailedTextures}
+            onNodeClick={(node) => handleNodeClick(node.logicalPosition)}
+            onNodeHover={(node) => setHoveredTacticalNodeId(node?.id ?? null)}
+          />
 
-const FloatingCrystal: React.FC<FloatingCrystalProps> = ({ position, color, offset }) => {
-  const ref = useRef<THREE.Mesh>(null);
-  
-  useFrame((state, delta) => {
-    if (!ref.current) return;
-    const t = state.clock.getElapsedTime();
-    ref.current.position.y = position[1] + Math.sin(t * 1.3 + offset) * 0.12;
-    ref.current.rotation.y += delta * 0.35;
-    ref.current.rotation.x += delta * 0.12;
-  });
+          {activeRoutes.map((route) => (
+            <ValidRoute key={route.id} points={route.points} highlight={route.highlight} />
+          ))}
 
-  return (
-    <mesh ref={ref} position={position} castShadow>
-      <octahedronGeometry args={[0.3, 0]} />
-      <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={1.6}
-        roughness={0.15}
-        metalness={0.85}
-      />
-    </mesh>
-  );
-};
+          {attackAnimations.map((animation) => (
+            <AttackAnimation3D
+              key={animation.id}
+              from={getBoardVisualNode(animation.from).worldPosition}
+              to={getBoardVisualNode(animation.to).worldPosition}
+              faction={animation.faction}
+              onComplete={() => {
+                setAttackAnimations((current) => current.filter((candidate) => candidate.id !== animation.id));
+              }}
+            />
+          ))}
 
-const PortalBridges: React.FC<{ boardWidth: number }> = ({ boardWidth }) => {
-  const half = boardWidth / 2;
-  return (
-    <group>
-      {/* Bridge to Opponent Portal */}
-      <mesh position={[0, 0.02, -half - 0.18]} receiveShadow>
-        <boxGeometry args={[1.5, 0.04, 0.38]} />
-        <meshStandardMaterial color="#1f2937" roughness={0.8} />
-      </mesh>
-      {/* Bridge to Player Portal */}
-      <mesh position={[0, 0.02, half + 0.18]} receiveShadow>
-        <boxGeometry args={[1.5, 0.04, 0.38]} />
-        <meshStandardMaterial color="#1f2937" roughness={0.8} />
-      </mesh>
-    </group>
+          {Object.values(gameState.board).map((entity) => {
+            if (entity.cardId.startsWith('obstaculo-')) {
+              if (!showObstacles) return null;
+              return <SanctuaryObstacle key={entity.id} entity={entity} onClick={() => handleNodeClick(entity.position)} />;
+            }
+
+            const attackAnimation = attackAnimations.find((animation) => animation.attackerId === entity.id);
+            const impactAnimation = attackAnimations.find((animation) => animation.targetId === entity.id);
+
+            return (
+              <Card3D
+                key={entity.id}
+                entity={entity}
+                visualNode={getBoardVisualNode(entity.position)}
+                isSelected={selectedEntity?.id === entity.id}
+                isHovered={hoveredEntity?.id === entity.id}
+                isHidden={!isEntityVisible(entity, gameState.board)}
+                movementRoute={movementAnimationRoutes[entity.id]}
+                attackTarget={attackAnimation ? getBoardVisualNode(attackAnimation.to).worldPosition : undefined}
+                attackPulseId={attackAnimation?.id}
+                impactPulseId={impactAnimation?.id}
+                onClick={selectedEntity?.id === entity.id ? undefined : () => handleNodeClick(entity.position)}
+                onHover={(isHovered) => setHoveredEntity(isHovered ? entity : null)}
+                onMovementComplete={() => {
+                  setMovementAnimationRoutes((current) => {
+                    if (!current[entity.id]) return current;
+                    const next = { ...current };
+                    delete next[entity.id];
+                    return next;
+                  });
+                }}
+              />
+            );
+          })}
+
+          {deathExplosions.map((explosion) => (
+            <DeathExplosion3D
+              key={explosion.id}
+              worldPosition={getBoardVisualNode(explosion.position).worldPosition}
+              faction={explosion.faction}
+              onComplete={() => {
+                setDeathExplosions((current) => current.filter((candidate) => candidate.id !== explosion.id));
+              }}
+            />
+          ))}
+
+          <OrbitControls
+            makeDefault
+            target={CAMERA_TARGET}
+            enablePan={false}
+            enableDamping
+            dampingFactor={0.075}
+            minPolarAngle={0.72}
+            maxPolarAngle={1.05}
+            minAzimuthAngle={-0.05}
+            maxAzimuthAngle={0.78}
+            minDistance={24}
+            maxDistance={36}
+          />
+        </SanctuaryMaterialsProvider>
+      </Canvas>
+
+      {canvasStatus === 'lost' && (
+        <div className="canvas-recovery" role="alert">
+          <strong>El escenario 3D se ha detenido</strong>
+          <span>Se ha conservado la partida.</span>
+          <button type="button" onClick={() => window.location.reload()}>Recargar escenario</button>
+        </div>
+      )}
+
+      <style>{`
+        .board3d-wrapper {
+          flex: 1;
+          position: relative;
+          min-width: 0;
+          min-height: 0;
+          overflow: hidden;
+          background: #9eb7ce;
+          isolation: isolate;
+        }
+        .canvas3d {
+          width: 100%;
+          height: 100%;
+          touch-action: none;
+        }
+        .canvas-recovery {
+          position: absolute;
+          inset: 0;
+          z-index: 80;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: #eef6ff;
+          background: rgba(7, 13, 21, 0.92);
+        }
+        .canvas-recovery strong {
+          font-size: 1rem;
+        }
+        .canvas-recovery span {
+          color: #aebdca;
+          font-size: 0.78rem;
+        }
+        .canvas-recovery button {
+          margin-top: 6px;
+          padding: 8px 12px;
+          border: 1px solid rgba(126, 211, 255, 0.45);
+          border-radius: 6px;
+          color: #eaf8ff;
+          background: #176887;
+          cursor: pointer;
+        }
+      `}</style>
+    </div>
   );
 };

@@ -1,78 +1,189 @@
-import React, { useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { BoardEntity } from '../../types/card';
+import type { BoardEntity, Position } from '../../types/card';
 import { CARDS_DB } from '../../core/cardsDb';
 import { FactionParticles } from './Particles';
-import { BOARD_SIZE } from '../../core/boardConfig';
-
-const tileSize = 1.25;
-const tileSpacing = 0.15;
-const gridOffset = (BOARD_SIZE - 1) / 2;
+import {
+  getMovementPath,
+  getMovementPathThroughNodes,
+  type BoardVisualNode,
+  type WorldPoint,
+} from '../../core/boardVisualLayout';
+import { resolvePublicAsset } from '../../core/publicAssets';
 
 interface Card3DProps {
   entity: BoardEntity;
+  visualNode: BoardVisualNode;
   isSelected?: boolean;
   isHovered?: boolean;
   isHidden?: boolean; // FOG OF WAR prop
+  movementRoute?: Position[];
+  attackTarget?: WorldPoint;
+  attackPulseId?: string;
+  impactPulseId?: string;
   onClick?: () => void;
   onHover?: (hovered: boolean) => void;
+  onMovementComplete?: () => void;
 }
 
 export const Card3D: React.FC<Card3DProps> = ({
   entity,
+  visualNode,
   isSelected = false,
   isHovered = false,
   isHidden = false,
+  movementRoute,
+  attackTarget,
+  attackPulseId,
+  impactPulseId,
   onClick,
   onHover,
+  onMovementComplete,
 }) => {
   const meshRef = useRef<THREE.Group>(null);
   const cardData = CARDS_DB[entity.cardId];
+  const logicalX = entity.position.x;
+  const logicalY = entity.position.y;
 
-  const targetX = (entity.position.x - gridOffset) * (tileSize + tileSpacing);
-  const targetZ = -(entity.position.y - gridOffset) * (tileSize + tileSpacing);
+  const previousLogicalPositionRef = useRef<Position>({ ...entity.position });
+  const movementRef = useRef<{
+    curve: THREE.CatmullRomCurve3;
+    progress: number;
+    duration: number;
+  } | null>(null);
+  const temporaryPositionRef = useRef(new THREE.Vector3());
+  const temporaryScaleRef = useRef(new THREE.Vector3(1, 1, 1));
+  const attackTargetRef = useRef(new THREE.Vector3());
+  const attackDirectionRef = useRef(new THREE.Vector3());
+  const previousHealthRef = useRef(entity.health);
+  const damageReactionRef = useRef(0);
+  const attackPulseRef = useRef(0);
+  const lastAttackPulseIdRef = useRef<string | undefined>(undefined);
+  const lastImpactPulseIdRef = useRef<string | undefined>(undefined);
+  const [artLoaded, setArtLoaded] = useState(false);
 
-  // Animation states for the summon/entrance jump effect
-  const isFirstRender = useRef(true);
+  useLayoutEffect(() => {
+    const previousPosition = previousLogicalPositionRef.current;
+    const currentPosition: Position = { x: logicalX, y: logicalY };
+    const hasMoved = previousPosition.x !== logicalX || previousPosition.y !== logicalY;
+
+    if (hasMoved) {
+      const firstRoutePosition = movementRoute?.[0];
+      const lastRoutePosition = movementRoute?.[movementRoute.length - 1];
+      const routeMatchesMovement = Boolean(
+        firstRoutePosition &&
+        lastRoutePosition &&
+        firstRoutePosition.x === previousPosition.x &&
+        firstRoutePosition.y === previousPosition.y &&
+        lastRoutePosition.x === currentPosition.x &&
+        lastRoutePosition.y === currentPosition.y,
+      );
+      const logicalRoute = routeMatchesMovement && movementRoute
+        ? movementRoute
+        : [previousPosition, currentPosition];
+      const worldPath = logicalRoute.length > 2
+        ? getMovementPathThroughNodes(logicalRoute)
+        : getMovementPath(previousPosition, currentPosition);
+      const path = worldPath.map(
+        ([x, y, z]) => new THREE.Vector3(x, y, z),
+      );
+      if (meshRef.current) path[0].copy(meshRef.current.position);
+      movementRef.current = {
+        curve: new THREE.CatmullRomCurve3(path, false, 'catmullrom', 0.28),
+        progress: 0,
+        duration: Math.min(1.35, 0.42 + (logicalRoute.length - 1) * 0.26),
+      };
+      previousLogicalPositionRef.current = currentPosition;
+    }
+
+    if (entity.health < previousHealthRef.current) damageReactionRef.current = 1;
+    previousHealthRef.current = entity.health;
+  }, [entity.health, logicalX, logicalY, movementRoute]);
+
+  useLayoutEffect(() => {
+    if (attackPulseId && attackPulseId !== lastAttackPulseIdRef.current && attackTarget) {
+      attackTargetRef.current.set(...attackTarget);
+      attackPulseRef.current = 1;
+      lastAttackPulseIdRef.current = attackPulseId;
+    }
+  }, [attackPulseId, attackTarget]);
+
+  useLayoutEffect(() => {
+    if (impactPulseId && impactPulseId !== lastImpactPulseIdRef.current) {
+      damageReactionRef.current = 1;
+      lastImpactPulseIdRef.current = impactPulseId;
+    }
+  }, [impactPulseId]);
 
   // Animates position, float heights, and interactive tilts smoothly
   useFrame((state, delta) => {
     if (!meshRef.current) return;
 
-    const speed = 7;
-    const curX = meshRef.current.position.x;
-    const curZ = meshRef.current.position.z;
+    const elapsed = state.clock.getElapsedTime();
+    const movement = movementRef.current;
+    let attackLunge = 0;
 
-    // Plinth sits on the floor: Y=0.22 base. Float if selected or hovered.
-    let targetY = isSelected ? 0.55 : isHovered ? 0.4 : 0.22;
-
-    // Fall slam animation on first render
-    if (isFirstRender.current) {
-      meshRef.current.position.y = 8.0;
-      meshRef.current.position.x = targetX;
-      meshRef.current.position.z = targetZ;
-      isFirstRender.current = false;
+    if (attackPulseRef.current > 0) {
+      attackPulseRef.current = Math.max(0, attackPulseRef.current - delta / 0.5);
+      attackLunge = Math.sin((1 - attackPulseRef.current) * Math.PI);
     }
 
-    const curY = meshRef.current.position.y;
+    if (movement) {
+      movement.progress = Math.min(1, movement.progress + delta / movement.duration);
+      const easedProgress = 1 - Math.pow(1 - movement.progress, 3);
+      movement.curve.getPoint(easedProgress, temporaryPositionRef.current);
+      meshRef.current.position.copy(temporaryPositionRef.current);
+      if (movement.progress >= 1) {
+        movementRef.current = null;
+        onMovementComplete?.();
+      }
+    } else {
+      const floatOffset = Math.sin(elapsed * 1.45 + entity.position.x * 0.7) * 0.025;
+      const interactionLift = isSelected ? 0.14 : isHovered ? 0.08 : 0;
+      let targetX = visualNode.worldPosition[0];
+      let targetY = visualNode.worldPosition[1] + interactionLift + floatOffset;
+      let targetZ = visualNode.worldPosition[2];
+      if (attackLunge > 0) {
+        attackDirectionRef.current.copy(attackTargetRef.current);
+        attackDirectionRef.current.x -= visualNode.worldPosition[0];
+        attackDirectionRef.current.y -= visualNode.worldPosition[1];
+        attackDirectionRef.current.z -= visualNode.worldPosition[2];
+        attackDirectionRef.current.y = 0;
+        attackDirectionRef.current.normalize().multiplyScalar(attackLunge * 0.52);
+        targetX += attackDirectionRef.current.x;
+        targetY += attackLunge * 0.2;
+        targetZ += attackDirectionRef.current.z;
+      }
+      const smoothing = 1 - Math.exp(-7.5 * delta);
 
-    // Lerp positions
-    meshRef.current.position.x = curX + (targetX - curX) * speed * delta;
-    meshRef.current.position.y = curY + (targetY - curY) * speed * delta;
-    meshRef.current.position.z = curZ + (targetZ - curZ) * speed * delta;
+      meshRef.current.position.x = THREE.MathUtils.lerp(meshRef.current.position.x, targetX, smoothing);
+      meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, smoothing);
+      meshRef.current.position.z = THREE.MathUtils.lerp(meshRef.current.position.z, targetZ, smoothing);
+    }
 
     // Tilt animations:
     // Selected cards tilt towards player, hovered cards sway gently, frozen cards shake
-    const defaultRotX = -0.3; // Default tilt to face the camera
-    const targetRotX = isSelected ? -0.45 : isHovered ? -0.38 : defaultRotX;
-    const targetRotY = isHovered ? Math.sin(state.clock.getElapsedTime() * 2) * 0.08 : 0;
-    const targetRotZ = entity.frozenTurns > 0 ? Math.sin(Date.now() * 0.005) * 0.04 : 0;
+    const defaultRotX = visualNode.cardRotation?.[0] ?? -0.17;
+    const defaultRotY = visualNode.cardRotation?.[1] ?? 0.42;
+    const targetRotX = (isSelected ? defaultRotX - 0.12 : isHovered ? defaultRotX - 0.06 : defaultRotX) - attackLunge * 0.12;
+    const targetRotY = defaultRotY + (isHovered ? Math.sin(elapsed * 2) * 0.055 : 0);
+    const frozenShake = entity.frozenTurns > 0 ? Math.sin(elapsed * 18) * 0.035 : 0;
 
-    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotX, 10 * delta);
-    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotY, 10 * delta);
-    meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotZ, 10 * delta);
+    damageReactionRef.current = Math.max(0, damageReactionRef.current - delta * 3.8);
+    const damageShake = Math.sin(elapsed * 42) * damageReactionRef.current * 0.07;
+    const targetRotZ = frozenShake + damageShake;
+    const restingScale = cardData?.type === 'COMANDANTE' ? 1.16 : 1;
+    const targetScale = (isSelected ? 1.3 : isHovered ? 1.16 : restingScale) + damageReactionRef.current * 0.055 + attackLunge * 0.06;
+
+    const rotationSmoothing = 1 - Math.exp(-10 * delta);
+    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotX, rotationSmoothing);
+    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotY, rotationSmoothing);
+    meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotZ, rotationSmoothing);
+    const scaleSmoothing = 1 - Math.exp(-10 * delta);
+    temporaryScaleRef.current.setScalar(targetScale);
+    meshRef.current.scale.lerp(temporaryScaleRef.current, scaleSmoothing);
   });
 
   if (!cardData) return null;
@@ -98,11 +209,15 @@ export const Card3D: React.FC<Card3DProps> = ({
   return (
     <group
       ref={meshRef}
-      position={[targetX, 8.0, targetZ]}
-      onClick={(e) => {
+      position={[
+        visualNode.worldPosition[0],
+        visualNode.worldPosition[1] + 4.6,
+        visualNode.worldPosition[2],
+      ]}
+      onClick={onClick ? (e) => {
         e.stopPropagation();
-        if (onClick) onClick();
-      }}
+        onClick();
+      } : undefined}
       onPointerOver={(e) => {
         e.stopPropagation();
         if (onHover) onHover(true);
@@ -142,6 +257,19 @@ export const Card3D: React.FC<Card3DProps> = ({
         </mesh>
       )}
 
+      {isSelected && (
+        <mesh position={[0, 0.72, -0.08]}>
+          <cylinderGeometry args={[0.46, 0.68, 1.5, 28, 1, true]} />
+          <meshBasicMaterial
+            color={cardData.faction === 'FURIA' ? '#ffb36b' : '#8bddff'}
+            transparent
+            opacity={0.055}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+
       {/* 4. 3D Card standee, raised above the base */}
       <mesh
         position={[0, 0.95, 0]}
@@ -158,7 +286,8 @@ export const Card3D: React.FC<Card3DProps> = ({
         {/* Projected HTML Card Face on the front side (Z = 0.05). STATIC DOM NODES TO PREVENT UNMOUNT CRASHES! */}
         <Html
           transform
-          distanceFactor={1.35}
+          pointerEvents="none"
+          distanceFactor={3.75}
           position={[0, 0, 0.05]}
           rotation={[0, 0, 0]}
           style={{
@@ -168,6 +297,8 @@ export const Card3D: React.FC<Card3DProps> = ({
           }}
         >
           <div
+            data-entity-id={entity.id}
+            data-logical-position={`${logicalX},${logicalY}`}
             className={[
               'card3d-face',
               isHidden ? 'hidden-fog' : cardData.faction.toLowerCase(),
@@ -193,7 +324,14 @@ export const Card3D: React.FC<Card3DProps> = ({
               {isHidden ? (
                 <div className="hidden-fog-art">?</div>
               ) : (
-                <img src={cardData.artPath} alt="" />
+                <img
+                  src={resolvePublicAsset(cardData.artPath)}
+                  alt=""
+                  className={artLoaded ? 'is-loaded' : ''}
+                  loading="eager"
+                  decoding="async"
+                  onLoad={() => setArtLoaded(true)}
+                />
               )}
             </div>
 
@@ -325,6 +463,15 @@ export const Card3D: React.FC<Card3DProps> = ({
               width: 100%;
               height: 100%;
               object-fit: cover;
+              opacity: 0;
+              backface-visibility: hidden;
+              transform: translateZ(0.01px);
+              transition: opacity 0.12s ease-out;
+              will-change: opacity, transform;
+            }
+
+            .card3d-art img.is-loaded {
+              opacity: 1;
             }
 
             .card3d-watermark {
@@ -422,18 +569,18 @@ export const Card3D: React.FC<Card3DProps> = ({
       </mesh>
 
       {/* Render particle effects for Furia (fire embers) and Arcano (ice sparkles) */}
-      {cardData.faction === 'FURIA' && (
+      {cardData.faction === 'FURIA' && (isSelected || isHovered) && (
         <FactionParticles
-          position={[meshRef.current?.position.x || targetX, 0.1, meshRef.current?.position.z || targetZ]}
+          position={[0, 0.1, 0]}
           faction="FURIA"
-          count={15}
+          count={7}
         />
       )}
       {cardData.faction === 'ARCANO' && entity.frozenTurns > 0 && (
         <FactionParticles
-          position={[meshRef.current?.position.x || targetX, 0.1, meshRef.current?.position.z || targetZ]}
+          position={[0, 0.1, 0]}
           faction="ARCANO"
-          count={10}
+          count={6}
         />
       )}
     </group>

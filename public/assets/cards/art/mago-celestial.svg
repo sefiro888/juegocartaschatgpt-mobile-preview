@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#060a16" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-mago-celestial)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Floating magic circles -->
+      <circle cx="200" cy="160" r="90" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.3" />
+      <circle cx="200" cy="160" r="75" fill="none" stroke="#e0f2fe" stroke-width="1.5" stroke-dasharray="12 8" opacity="0.5" />
+      <!-- Wizard silhouette with sky robes -->
+      <g transform="translate(140, 90)">
+        <path d="M 20,110 L 100,110 L 115,220 L 5,220 Z" fill="#0c1833" stroke="#00d9ff" stroke-width="2" />
+        <path d="M 30,80 C 30,40 90,40 90,80 L 80,95 L 40,95 Z" fill="#080f21" stroke="#00d9ff" stroke-width="2" />
+        <!-- Floating staff in background -->
+        <line x1="-15" y1="70" x2="-15" y2="210" stroke="#fef08a" stroke-width="3.5" />
+        <circle cx="-15" cy="65" r="10" fill="#00e5ff" opacity="0.8" filter="blur(3px)" />
+      </g>
+    
+
+  <defs>
+    <radialGradient id="bgGrad-mago-celestial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#060a16" />
+    </radialGradient>
+  </defs>
+</svg>

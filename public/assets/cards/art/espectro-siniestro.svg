@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#0f0714" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-espectro-siniestro)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Tattered ghostly shroud floating -->
+      <path d="M 160,120 Q 200,80 240,120 Q 260,180 230,280 Q 200,300 170,280 Q 140,180 160,120 Z" fill="#0b0312" stroke="#d946ef" stroke-width="2.5" />
+      <!-- Glowing inner entity -->
+      <circle cx="200" cy="130" r="16" fill="#a855f7" opacity="0.7" filter="blur(4px)" />
+      <!-- Whispy claws -->
+      <path d="M 140,170 Q 100,190 120,200" fill="none" stroke="#d946ef" stroke-width="2" />
+      <path d="M 260,170 Q 300,190 280,200" fill="none" stroke="#d946ef" stroke-width="2" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-espectro-siniestro" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#0f0714" />
+    </radialGradient>
+  </defs>
+</svg>

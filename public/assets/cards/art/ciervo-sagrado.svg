@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#08120a" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-ciervo-sagrado)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Golden antlers glow -->
+      <path d="M 180,105 Q 120,60 140,40 M 180,105 Q 150,70 160,50 M 220,105 Q 280,60 260,40 M 220,105 Q 250,70 240,50" fill="none" stroke="#eab308" stroke-width="4.5" stroke-linecap="round" />
+      <circle cx="200" cy="70" r="40" fill="#eab308" opacity="0.25" filter="blur(10px)" />
+      <!-- Stag head and neck -->
+      <path d="M 160,280 L 240,280 L 225,180 L 220,110 L 180,110 L 175,180 Z" fill="#0f172a" stroke="#10b981" stroke-width="2.5" />
+      <!-- Glowing green eyes -->
+      <circle cx="190" cy="125" r="3" fill="#ecfccb" />
+      <circle cx="210" cy="125" r="3" fill="#ecfccb" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-ciervo-sagrado" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#08120a" />
+    </radialGradient>
+  </defs>
+</svg>

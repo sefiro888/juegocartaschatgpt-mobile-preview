@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#1c1c14" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-clerigo-luz)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Priest outline holding holy light staff -->
+      <g transform="translate(140, 90)">
+        <path d="M 20,120 L 100,120 L 110,225 L 10,225 Z" fill="#fef9c3" stroke="#fbbf24" stroke-width="2" />
+        <path d="M 35,90 C 35,50 85,50 85,90 L 75,105 L 45,105 Z" fill="#eab308" stroke="#fbbf24" stroke-width="2" />
+        <!-- Glowing staff -->
+        <line x1="115" y1="60" x2="115" y2="220" stroke="#451a03" stroke-width="3" />
+        <circle cx="115" cy="50" r="12" fill="#fbbf24" opacity="0.85" filter="blur(3px)" />
+      </g>
+    
+
+  <defs>
+    <radialGradient id="bgGrad-clerigo-luz" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#1c1c14" />
+    </radialGradient>
+  </defs>
+</svg>

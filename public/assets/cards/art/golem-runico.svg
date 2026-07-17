@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#060a16" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-golem-runico)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Giant runic stone golem silhouette -->
+      <rect x="130" y="140" width="140" height="150" rx="20" fill="#1e293b" stroke="#3b82f6" stroke-width="3" />
+      <!-- Glowing blue carved runes -->
+      <path d="M 170,180 H 230 M 200,180 V 240 M 180,210 H 220" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" filter="blur(1px)" />
+      <!-- Shoulders -->
+      <circle cx="115" cy="160" r="25" fill="#0f172a" stroke="#3b82f6" stroke-width="2" />
+      <circle cx="285" cy="160" r="25" fill="#0f172a" stroke="#3b82f6" stroke-width="2" />
+      <!-- Runic eyes -->
+      <circle cx="180" cy="115" r="4" fill="#00e5ff" />
+      <circle cx="220" cy="115" r="4" fill="#00e5ff" />
+      <!-- Head stone -->
+      <polygon points="170,130 230,130 200,95" fill="#334155" stroke="#3b82f6" stroke-width="2" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-golem-runico" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#060a16" />
+    </radialGradient>
+  </defs>
+</svg>

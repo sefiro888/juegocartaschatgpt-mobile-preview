@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#0b0514" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-leviatan-abisal)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Massive sea serpent/whale silhouette in dark navy -->
+      <path d="M 50,220 C 120,180 200,280 280,200 C 320,170 340,110 320,80 Q 290,130 260,140 Q 180,120 120,200 Z" fill="#090514" stroke="#ec4899" stroke-width="2.5" />
+      <!-- Bioluminescent dots -->
+      <circle cx="140" cy="180" r="3.5" fill="#8b5cf6" />
+      <circle cx="170" cy="175" r="3" fill="#8b5cf6" />
+      <circle cx="200" cy="165" r="3.5" fill="#fae8ff" />
+      <circle cx="230" cy="155" r="3" fill="#fae8ff" />
+      <!-- Deep sea glowing water effect -->
+      <ellipse cx="200" cy="220" rx="120" ry="40" fill="none" stroke="#8b5cf6" stroke-width="1" stroke-opacity="0.3" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-leviatan-abisal" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#0b0514" />
+    </radialGradient>
+  </defs>
+</svg>

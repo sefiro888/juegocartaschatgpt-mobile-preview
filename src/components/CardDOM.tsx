@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Card } from '../types/card';
+import { getCardArtCandidates } from '../core/publicAssets';
 
 interface CardDOMProps {
   card: Card;
@@ -16,16 +17,19 @@ export const CardDOM: React.FC<CardDOMProps> = ({
   isPlayable = false,
   onClick,
 }) => {
-  const [imgSrc, setImgSrc] = useState(`/assets/cards/art/${card.id}.webp`);
+  const artCandidates = useMemo(
+    () => getCardArtCandidates(card),
+    [card],
+  );
+  const [artCandidateIndex, setArtCandidateIndex] = useState(0);
+  const imgSrc = artCandidates[Math.min(artCandidateIndex, artCandidates.length - 1)];
 
   useEffect(() => {
-    setImgSrc(`/assets/cards/art/${card.id}.webp`);
-  }, [card.id]);
+    setArtCandidateIndex(0);
+  }, [artCandidates]);
 
   const handleImageError = () => {
-    if (imgSrc.endsWith('.webp')) {
-      setImgSrc(`/assets/cards/art/${card.id}.svg`);
-    }
+    setArtCandidateIndex((current) => Math.min(current + 1, artCandidates.length - 1));
   };
 
   const getRarityColor = (rarity: string) => {

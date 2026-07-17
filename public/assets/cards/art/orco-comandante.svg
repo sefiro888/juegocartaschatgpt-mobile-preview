@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#160808" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-orco-comandante)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Battle standards in background -->
+      <line x1="120" y1="80" x2="120" y2="300" stroke="#f59e0b" stroke-width="4" />
+      <polygon points="120,80 70,100 120,140" fill="#7f1d1d" stroke="#ef4444" stroke-width="1.5" />
+      <!-- Rugged bulky torso with shoulder spikes -->
+      <path d="M 130,220 L 270,220 L 290,320 L 110,320 Z" fill="#1c1f1d" stroke="#10b981" stroke-width="2" />
+      <rect x="135" y="210" width="30" height="20" rx="5" fill="#4b5563" stroke="#f59e0b" stroke-width="1.5" />
+      <rect x="235" y="210" width="30" height="20" rx="5" fill="#4b5563" stroke="#f59e0b" stroke-width="1.5" />
+      <!-- Spikes -->
+      <polygon points="150,210 150,180 140,200" fill="#cbd5e1" />
+      <polygon points="250,210 250,180 260,200" fill="#cbd5e1" />
+      <!-- Head with commander iron crown -->
+      <circle cx="200" cy="180" r="22" fill="#2d372e" stroke="#10b981" stroke-width="2" />
+      <polygon points="180,165 200,140 220,165 210,165 200,155 190,165" fill="#4b5563" stroke="#f59e0b" stroke-width="1" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-orco-comandante" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#160808" />
+    </radialGradient>
+  </defs>
+</svg>

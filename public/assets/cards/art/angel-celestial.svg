@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#1c1c14" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-angel-celestial)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Wing of Light (Left) -->
+      <path d="M 200,160 L 90,80 L 120,200 L 170,180 Z" fill="#fef9c3" stroke="#fbbf24" stroke-width="1.5" />
+      <!-- Wing of Light (Right) -->
+      <path d="M 200,160 L 310,80 L 280,200 L 230,180 Z" fill="#fef9c3" stroke="#fbbf24" stroke-width="1.5" />
+      <!-- Halo -->
+      <ellipse cx="200" cy="95" rx="25" ry="8" fill="none" stroke="#fbbf24" stroke-width="3" />
+      <!-- Angelic body silhouette -->
+      <path d="M 170,160 L 230,160 L 210,280 L 190,280 Z" fill="#451a03" stroke="#eab308" stroke-width="2" />
+      <circle cx="200" cy="120" r="15" fill="#fef9c3" stroke="#fbbf24" stroke-width="1" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-angel-celestial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#1c1c14" />
+    </radialGradient>
+  </defs>
+</svg>

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -15,21 +15,23 @@ export const FactionParticles: React.FC<FactionParticlesProps> = ({
 }) => {
   const pointsRef = useRef<THREE.Points>(null);
 
-  // Initialize random velocities and positions
-  const tempPositions = new Float32Array(count * 3);
-  const tempVelocities = new Float32Array(count * 3);
+  const [tempPositions, tempVelocities] = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const velocities = new Float32Array(count * 3);
 
-  for (let i = 0; i < count; i++) {
-    // Spread particles slightly around position
-    tempPositions[i * 3] = (Math.random() - 0.5) * 1.5;
-    tempPositions[i * 3 + 1] = Math.random() * 0.5;
-    tempPositions[i * 3 + 2] = (Math.random() - 0.5) * 1.5;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const radius = 0.18 + ((i * 7) % 9) * 0.045;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = ((i * 5) % 11) * 0.035;
+      positions[i * 3 + 2] = Math.sin(angle) * radius;
+      velocities[i * 3] = Math.cos(angle) * 0.06;
+      velocities[i * 3 + 1] = 0.32 + ((i * 3) % 7) * 0.035;
+      velocities[i * 3 + 2] = Math.sin(angle) * 0.06;
+    }
 
-    // Upward velocity
-    tempVelocities[i * 3] = (Math.random() - 0.5) * 0.2;
-    tempVelocities[i * 3 + 1] = 0.5 + Math.random() * 0.5; // up speed
-    tempVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
-  }
+    return [positions, velocities];
+  }, [count]);
 
   useFrame((_, delta) => {
     if (!pointsRef.current) return;
@@ -45,10 +47,11 @@ export const FactionParticles: React.FC<FactionParticlesProps> = ({
       let z = posAttr.getZ(i) + tempVelocities[idx + 2] * delta;
 
       // Reset when particle goes too high
-      if (y > 2.0) {
+      if (y > 1.35) {
         y = 0;
-        x = (Math.random() - 0.5) * 1.5;
-        z = (Math.random() - 0.5) * 1.5;
+        const angle = (i / count) * Math.PI * 2;
+        x = Math.cos(angle) * 0.22;
+        z = Math.sin(angle) * 0.22;
       }
 
       posAttr.setXYZ(i, x, y, z);

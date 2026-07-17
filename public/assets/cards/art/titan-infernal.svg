@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#160808" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-titan-infernal)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Giant body silhouette with lava cracks -->
+      <path d="M 120,320 L 280,320 L 260,140 L 140,140 Z" fill="#1f0707" stroke="#ef4444" stroke-width="3" />
+      <path d="M 150,140 C 150,80 250,80 250,140 Z" fill="#2d0c0c" stroke="#ef4444" stroke-width="3" />
+      <!-- Glowing core -->
+      <circle cx="200" cy="200" r="30" fill="#fef08a" filter="blur(8px)" opacity="0.9" />
+      <circle cx="200" cy="200" r="15" fill="#f59e0b" />
+      <!-- Lava cracks -->
+      <path d="M 200,140 L 180,240 M 200,180 L 230,230 M 170,170 L 200,220" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+      <!-- Glowing eyes -->
+      <circle cx="185" cy="115" r="4" fill="#fef08a" />
+      <circle cx="215" cy="115" r="4" fill="#fef08a" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-titan-infernal" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#160808" />
+    </radialGradient>
+  </defs>
+</svg>

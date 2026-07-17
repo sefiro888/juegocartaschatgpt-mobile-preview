@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#1c1c14" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-grifo-orden)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Golden sun backdrop -->
+      <circle cx="200" cy="130" r="50" fill="#eab308" opacity="0.75" />
+      <!-- Griffin silhouette soaring -->
+      <!-- Wings -->
+      <path d="M 200,160 L 90,60 L 130,170 Q 200,150 200,160" fill="#451a03" stroke="#fbbf24" stroke-width="1.5" />
+      <path d="M 200,160 L 310,60 L 270,170 Q 200,150 200,160" fill="#451a03" stroke="#fbbf24" stroke-width="1.5" />
+      <!-- Griffin eagle head and lion body -->
+      <path d="M 180,180 Q 200,240 230,240 L 245,265 L 210,265" fill="#3f2305" stroke="#eab308" stroke-width="2" />
+      <circle cx="175" cy="165" r="12" fill="#eab308" />
+      <polygon points="168,165 150,175 168,172" fill="#fbbf24" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-grifo-orden" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#1c1c14" />
+    </radialGradient>
+  </defs>
+</svg>

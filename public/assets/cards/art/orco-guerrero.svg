@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#160808" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-orco-guerrero)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Spiky warrior profile -->
+      <path d="M 140,240 L 260,240 L 280,330 L 120,330 Z" fill="#1a241b" stroke="#10b981" stroke-width="2" />
+      <circle cx="200" cy="190" r="22" fill="#273328" stroke="#10b981" stroke-width="1.5" />
+      <!-- Helmet with spikes -->
+      <path d="M 180,180 C 180,160 220,160 220,180 Z" fill="#374151" stroke="#cbd5e1" stroke-width="2" />
+      <line x1="200" y1="165" x2="200" y2="145" stroke="#f59e0b" stroke-width="3" />
+      <!-- Weapon - spikes showing behind shoulder -->
+      <line x1="260" y1="230" x2="290" y2="170" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round" />
+      <polygon points="280,180 300,160 290,190" fill="#cbd5e1" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-orco-guerrero" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#160808" />
+    </radialGradient>
+  </defs>
+</svg>

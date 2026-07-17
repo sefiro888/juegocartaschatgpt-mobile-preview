@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#08120a" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-arboleda-sagrada)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Ancient massive tree outline -->
+      <path d="M 180,330 V 220 L 110,150 L 130,130 L 190,190 L 210,190 L 270,130 L 290,150 L 220,220 V 330 Z" fill="#0f172a" stroke="#10b981" stroke-width="4" />
+      <!-- Glowing green foliage clouds -->
+      <circle cx="130" cy="120" r="45" fill="#064e3b" stroke="#84cc16" stroke-width="2" opacity="0.9" />
+      <circle cx="270" cy="120" r="45" fill="#064e3b" stroke="#84cc16" stroke-width="2" opacity="0.9" />
+      <circle cx="200" cy="90" r="55" fill="#0f766e" stroke="#10b981" stroke-width="3" opacity="0.95" />
+      <!-- Glowing light particles -->
+      <circle cx="200" cy="240" r="8" fill="#ecfccb" opacity="0.8" filter="blur(2px)" />
+      <circle cx="160" cy="180" r="6" fill="#ecfccb" opacity="0.7" filter="blur(2px)" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-arboleda-sagrada" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#08120a" />
+    </radialGradient>
+  </defs>
+</svg>

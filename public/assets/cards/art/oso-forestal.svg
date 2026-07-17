@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#08120a" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-oso-forestal)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Roaring bear silhouette -->
+      <path d="M 100,320 C 120,250 150,210 180,190 C 210,170 230,140 220,120 L 250,120 L 270,160 L 250,180 C 240,210 260,250 280,320 Z" fill="#1f1810" stroke="#10b981" stroke-width="3" />
+      <!-- Bear ear and muzzle -->
+      <path d="M 220,120 Q 210,100 205,110 Q 215,115 220,120" fill="#1f1810" stroke="#10b981" stroke-width="1" />
+      <!-- Roaring glow / forest background -->
+      <circle cx="200" cy="160" r="95" fill="none" stroke="#84cc16" stroke-width="1" stroke-dasharray="8 6" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-oso-forestal" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#08120a" />
+    </radialGradient>
+  </defs>
+</svg>

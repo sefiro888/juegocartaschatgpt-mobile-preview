@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <!-- Multilayered Background -->
+  <rect width="400" height="400" fill="#0b0514" />
+  <circle cx="200" cy="200" r="180" fill="url(#bgGrad-horror-abisal)" opacity="0.3" />
+
+  <!-- Inner artwork content -->
+  
+      <!-- Giant octopus/alien eye in the dark -->
+      <circle cx="200" cy="150" r="45" fill="#1e0b36" stroke="#ec4899" stroke-width="3" />
+      <ellipse cx="200" cy="150" rx="30" ry="12" fill="#ec4899" />
+      <circle cx="200" cy="150" r="8" fill="#000000" />
+      <!-- Tentacles swirling around -->
+      <path d="M 120,240 Q 160,290 200,240 Q 240,190 280,240" fill="none" stroke="#8b5cf6" stroke-width="6" stroke-linecap="round" />
+      <path d="M 90,120 Q 150,180 160,220" fill="none" stroke="#ec4899" stroke-width="4" stroke-linecap="round" />
+      <path d="M 310,120 Q 250,180 240,220" fill="none" stroke="#ec4899" stroke-width="4" stroke-linecap="round" />
+    
+
+  <defs>
+    <radialGradient id="bgGrad-horror-abisal" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#0b0514" />
+    </radialGradient>
+  </defs>
+</svg>
