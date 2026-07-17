@@ -63,6 +63,7 @@ export const Card3D: React.FC<Card3DProps> = ({
   const lastAttackPulseIdRef = useRef<string | undefined>(undefined);
   const lastImpactPulseIdRef = useRef<string | undefined>(undefined);
   const [artLoaded, setArtLoaded] = useState(false);
+  const [damageFeedback, setDamageFeedback] = useState<{ amount: number; id: number } | null>(null);
 
   useLayoutEffect(() => {
     const previousPosition = previousLogicalPositionRef.current;
@@ -98,7 +99,11 @@ export const Card3D: React.FC<Card3DProps> = ({
       previousLogicalPositionRef.current = currentPosition;
     }
 
-    if (entity.health < previousHealthRef.current) damageReactionRef.current = 1;
+    if (entity.health < previousHealthRef.current) {
+      const damage = previousHealthRef.current - entity.health;
+      damageReactionRef.current = 1;
+      setDamageFeedback({ amount: damage, id: Date.now() });
+    }
     previousHealthRef.current = entity.health;
   }, [entity.health, logicalX, logicalY, movementRoute]);
 
@@ -268,6 +273,19 @@ export const Card3D: React.FC<Card3DProps> = ({
             depthWrite={false}
           />
         </mesh>
+      )}
+
+      {damageFeedback && !isHidden && (
+        <Html
+          key={damageFeedback.id}
+          center
+          pointerEvents="none"
+          position={[0, 2.25, 0.18]}
+          distanceFactor={5}
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="card3d-damage-number">-{damageFeedback.amount}</div>
+        </Html>
       )}
 
       {/* 4. 3D Card standee, raised above the base */}
@@ -563,6 +581,28 @@ export const Card3D: React.FC<Card3DProps> = ({
               letter-spacing: 0.05em;
               z-index: 11;
               box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            }
+
+            .card3d-damage-number {
+              color: #fff4e6;
+              font-family: 'Outfit', sans-serif;
+              font-size: 2rem;
+              font-weight: 900;
+              line-height: 1;
+              white-space: nowrap;
+              -webkit-text-stroke: 1px rgba(98, 18, 12, 0.9);
+              text-shadow:
+                0 2px 0 #8f2017,
+                0 0 10px rgba(255, 89, 55, 0.92),
+                0 5px 12px rgba(0, 0, 0, 0.72);
+              animation: card3d-damage-rise 0.85s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
+            }
+
+            @keyframes card3d-damage-rise {
+              0% { opacity: 0; transform: translateY(12px) scale(0.65); }
+              18% { opacity: 1; transform: translateY(0) scale(1.18); }
+              72% { opacity: 1; transform: translateY(-16px) scale(1); }
+              100% { opacity: 0; transform: translateY(-28px) scale(0.9); }
             }
           `}</style>
         </Html>

@@ -4,6 +4,28 @@ import { CARDS_DB } from './cardsDb';
 import { BOARD_SIZE, COMMANDER_COLUMN, OPPONENT_BACK_ROW, PLAYER_BACK_ROW } from './boardConfig';
 import { getReachablePositions, isBoardObstacle } from './boardPathfinding';
 
+export type AIActionKind = 'mana' | 'summon' | 'spell' | 'attack' | 'move';
+
+export interface AIActionStep {
+  state: GameState;
+  kind: AIActionKind;
+  cardId?: string;
+  actorId?: string;
+  targetId?: string;
+  from?: Position;
+  to?: Position;
+}
+
+export type AIActionObserver = (step: AIActionStep) => void;
+
+function reportAIAction(
+  observer: AIActionObserver | undefined,
+  state: GameState,
+  action: Omit<AIActionStep, 'state'>,
+) {
+  observer?.({ ...action, state });
+}
+
 // Spell IDs that target a single enemy
 const ENEMY_TARGET_SPELLS = new Set([
   'lluvia-ceniza', 'chispa-fugaz', 'prision-glacial',
@@ -46,7 +68,7 @@ function scoreAttackTarget(target: BoardEntity): number {
 }
 
 // Simple heuristic AI for OPPONENT
-export function executeAITurn(state: GameState): GameState {
+export function executeAITurn(state: GameState, observer?: AIActionObserver): GameState {
   let currentState = { ...state };
   let actionCount = 0;
   const maxActions = 20; // Loop protection
@@ -56,6 +78,7 @@ export function executeAITurn(state: GameState): GameState {
   const manaCard = opponent.hand.find(c => c.type === 'MANA');
   if (manaCard && !opponent.manaPlayedThisTurn) {
     currentState = playManaCard(currentState, 'OPPONENT', manaCard.id);
+    reportAIAction(observer, currentState, { kind: 'mana', cardId: manaCard.id });
     actionCount++;
   }
 
@@ -130,6 +153,11 @@ export function executeAITurn(state: GameState): GameState {
 
           const bestSpot = validSpots[0];
           currentState = summonUnit(currentState, 'OPPONENT', card.id, bestSpot, battlecryTarget);
+          reportAIAction(observer, currentState, {
+            kind: 'summon',
+            cardId: card.id,
+            to: { ...bestSpot },
+          });
           summoned = true;
           actionCount++;
           possibleMoves = true;
@@ -158,6 +186,7 @@ export function executeAITurn(state: GameState): GameState {
         );
         if (playerUnits.length > opponentUnits.length) {
           currentState = playSpell(currentState, 'OPPONENT', card.id);
+          reportAIAction(observer, currentState, { kind: 'spell', cardId: card.id });
           spellCast = true;
           actionCount++;
           possibleMoves = true;
@@ -187,6 +216,12 @@ export function executeAITurn(state: GameState): GameState {
           });
           const bestTarget = friendlyUnits[0];
           currentState = playSpell(currentState, 'OPPONENT', card.id, bestTarget.position);
+          reportAIAction(observer, currentState, {
+            kind: 'spell',
+            cardId: card.id,
+            targetId: bestTarget.id,
+            to: { ...bestTarget.position },
+          });
           spellCast = true;
           actionCount++;
           possibleMoves = true;
@@ -214,7 +249,13 @@ export function executeAITurn(state: GameState): GameState {
           }
         }
         if (bestCol >= 0 && bestCount >= 2) {
-              currentState = playSpell(currentState, 'OPPONENT', card.id, { x: bestCol, y: PLAYER_BACK_ROW });
+          const columnTarget = { x: bestCol, y: PLAYER_BACK_ROW };
+          currentState = playSpell(currentState, 'OPPONENT', card.id, columnTarget);
+          reportAIAction(observer, currentState, {
+            kind: 'spell',
+            cardId: card.id,
+            to: columnTarget,
+          });
           spellCast = true;
           actionCount++;
           possibleMoves = true;
@@ -234,6 +275,12 @@ export function executeAITurn(state: GameState): GameState {
           // Bounce the strongest enemy unit
           playerUnits.sort((a, b) => b.attack - a.attack);
           currentState = playSpell(currentState, 'OPPONENT', card.id, playerUnits[0].position);
+          reportAIAction(observer, currentState, {
+            kind: 'spell',
+            cardId: card.id,
+            targetId: playerUnits[0].id,
+            to: { ...playerUnits[0].position },
+          });
           spellCast = true;
           actionCount++;
           possibleMoves = true;
@@ -299,6 +346,12 @@ export function executeAITurn(state: GameState): GameState {
             }
 
             currentState = playSpell(currentState, 'OPPONENT', card.id, target.position);
+            reportAIAction(observer, currentState, {
+              kind: 'spell',
+              cardId: card.id,
+              targetId: target.id,
+              to: { ...target.position },
+            });
             spellCast = true;
             actionCount++;
             possibleMoves = true;
@@ -332,7 +385,17 @@ export function executeAITurn(state: GameState): GameState {
         adjacentEnemies.sort((a, b) => scoreAttackTarget(b) - scoreAttackTarget(a));
         const bestTarget = adjacentEnemies[0];
 
-        currentState = combatAttack(currentState, unit.position, bestTarget.position);
+        const attackFrom = { ...unit.position };
+        const attackTo = { ...bestTarget.position };
+        currentState = combatAttack(currentState, attackFrom, attackTo);
+        reportAIAction(observer, currentState, {
+          kind: 'attack',
+          cardId: unit.cardId,
+          actorId: unit.id,
+          targetId: bestTarget.id,
+          from: attackFrom,
+          to: attackTo,
+        });
         unitActed = true;
         actionCount++;
         possibleMoves = true;
@@ -383,7 +446,16 @@ export function executeAITurn(state: GameState): GameState {
         const currentDist = getDistance(currentPos, targetPos);
         const newDist = getDistance(bestMove, targetPos);
         if (newDist < currentDist) {
-          currentState = moveUnit(currentState, currentPos, bestMove);
+          const moveFrom = { ...currentPos };
+          const moveTo = { ...bestMove };
+          currentState = moveUnit(currentState, moveFrom, moveTo);
+          reportAIAction(observer, currentState, {
+            kind: 'move',
+            cardId: unit.cardId,
+            actorId: unit.id,
+            from: moveFrom,
+            to: moveTo,
+          });
           moved = true;
           actionCount++;
           possibleMoves = true;

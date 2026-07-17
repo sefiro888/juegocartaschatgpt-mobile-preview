@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initializeGame, playManaCard, summonUnit, moveUnit, combatAttack, playSpell } from '../engine';
+import { initializeGame, playManaCard, summonUnit, moveUnit, combatAttack, getCombatPreview, playSpell } from '../engine';
 import { getPreconstructedDeck, CARDS_DB } from '../cardsDb';
 import { COMMANDER_COLUMN, OPPONENT_BACK_ROW, PLAYER_BACK_ROW } from '../boardConfig';
 
@@ -209,6 +209,104 @@ describe('Rules Engine', () => {
     // Attacker takes 2 damage, health becomes 0, dies as well
     expect(state.board["2,1"]).toBeUndefined();
     expect(state.player.graveyard.map(c => c.id)).toContain('infiltrado-volcanico');
+  });
+
+  it('should let either side break neutral terrain and open its cell', () => {
+    let state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.board['2,3'] = {
+      id: 'terrain-breaker',
+      cardId: 'infiltrado-volcanico',
+      controller: 'PLAYER',
+      position: { x: 2, y: 3 },
+      health: 2,
+      maxHealth: 2,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+    state.board['2,4'] = {
+      id: 'fragile-current',
+      cardId: 'obstaculo-corriente',
+      controller: 'OPPONENT',
+      position: { x: 2, y: 4 },
+      health: 2,
+      maxHealth: 3,
+      attack: 0,
+      hasMovedThisTurn: true,
+      hasAttackedThisTurn: true,
+      frozenTurns: 0,
+    };
+
+    state = combatAttack(state, { x: 2, y: 3 }, { x: 2, y: 4 });
+
+    expect(state.board['2,4']).toBeUndefined();
+    expect(state.board['2,3']?.health).toBe(2);
+    expect(state.board['2,3']?.hasAttackedThisTurn).toBe(true);
+    expect(state.opponent.graveyard.map((card) => card.id)).not.toContain('obstaculo-corriente');
+  });
+
+  it('should let damage spells shatter terrain but reject control spells against it', () => {
+    let state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.player.manaSources.furia.total = 6;
+    state.player.hand.unshift({ ...CARDS_DB['lluvia-ceniza'] });
+    state.player.hand.unshift({ ...CARDS_DB['congelacion-rapida'] });
+    state.board['3,3'] = {
+      id: 'spell-current',
+      cardId: 'obstaculo-corriente',
+      controller: 'OPPONENT',
+      position: { x: 3, y: 3 },
+      health: 3,
+      maxHealth: 3,
+      attack: 0,
+      hasMovedThisTurn: true,
+      hasAttackedThisTurn: true,
+      frozenTurns: 0,
+    };
+
+    const beforeControl = state.player.hand.length;
+    state = playSpell(state, 'PLAYER', 'congelacion-rapida', { x: 3, y: 3 });
+    expect(state.player.hand).toHaveLength(beforeControl);
+
+    state = playSpell(state, 'PLAYER', 'lluvia-ceniza', { x: 3, y: 3 });
+    expect(state.board['3,3']).toBeUndefined();
+    expect(state.player.graveyard.map((card) => card.id)).toContain('lluvia-ceniza');
+  });
+
+  it('should preview the same combat exchange resolved by the engine', () => {
+    const state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.board['2,1'] = {
+      id: 'preview-attacker',
+      cardId: 'infiltrado-volcanico',
+      controller: 'PLAYER',
+      position: { x: 2, y: 1 },
+      health: 2,
+      maxHealth: 2,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+    state.board['2,2'] = {
+      id: 'preview-target',
+      cardId: 'sabueso-brasa',
+      controller: 'OPPONENT',
+      position: { x: 2, y: 2 },
+      health: 1,
+      maxHealth: 1,
+      attack: 2,
+      hasMovedThisTurn: false,
+      hasAttackedThisTurn: false,
+      frozenTurns: 0,
+    };
+
+    expect(getCombatPreview(state, { x: 2, y: 1 }, { x: 2, y: 2 })).toMatchObject({
+      damageToTarget: 2,
+      damageToAttacker: 2,
+      targetCanRetaliate: true,
+      targetWillFall: true,
+      attackerWillFall: true,
+    });
   });
 
   it('should apply unit range, line of sight, and ranged retaliation rules', () => {

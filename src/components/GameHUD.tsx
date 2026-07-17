@@ -1,22 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { Board3D } from './board3d/Board3D';
 import { CardDOM } from './CardDOM';
 import { CARDS_DB } from '../core/cardsDb';
 import type { BoardEntity } from '../types/card';
+import { Volume2, VolumeX } from 'lucide-react';
+
+const Board3D = lazy(async () => {
+  const module = await import('./board3d/Board3D');
+  return { default: module.Board3D };
+});
+
+class BoardErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="board-error-state" role="alert">
+          <strong>El santuario no ha podido cargarse.</strong>
+          <button type="button" onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 interface GameHUDProps {
   onQuit?: () => void;
 }
-
-/** A single entry in the action log feed */
-interface ActionLogEntry {
-  id: number;
-  text: string;
-  timestamp: number;
-}
-
-let actionLogId = 0;
 
 export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const {
@@ -25,12 +47,16 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     selectedEntity,
     hoveredEntity,
     inspectedCard,
+    gameEvents,
     selectCardInHand,
+    selectEntity,
     setInspectedCard,
     playMana,
     endActiveTurn,
     startNewGame,
     isAIThinking,
+    soundEnabled,
+    toggleSound,
   } = useGameStore();
 
   const isEntityVisibleInHUD = (entity: BoardEntity) => {
@@ -48,36 +74,29 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     });
   };
 
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
-  const prevTurnRef = useRef<number>(0);
-
   const turn = gameState?.turn || 0;
   const activePlayer = gameState?.activePlayer || 'PLAYER';
   const isPlayerTurn = activePlayer === 'PLAYER';
 
   useEffect(() => {
-    if (!gameState) return;
-    if (turn !== prevTurnRef.current) {
-      prevTurnRef.current = turn;
-      const entry: ActionLogEntry = {
-        id: ++actionLogId,
-        text: `Turno ${turn} — ${isPlayerTurn ? 'Tu turno' : 'Turno de la IA'}`,
-        timestamp: Date.now(),
-      };
-      setActionLog(prev => [...prev.slice(-2), entry]);
-    }
-  }, [turn, isPlayerTurn, gameState]);
-
-  useEffect(() => {
-    if (!inspectedCard) return;
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setInspectedCard(null);
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.key === 'Escape') {
+        if (inspectedCard) setInspectedCard(null);
+        else {
+          selectCardInHand(null);
+          selectEntity(null);
+        }
+      }
+      if (event.key === 'Enter' && !event.repeat && isPlayerTurn && !isAIThinking && !inspectedCard) {
+        event.preventDefault();
+        endActiveTurn();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [inspectedCard, setInspectedCard]);
+  }, [endActiveTurn, inspectedCard, isAIThinking, isPlayerTurn, selectCardInHand, selectEntity, setInspectedCard]);
 
   if (!gameState) return null;
 
@@ -94,28 +113,15 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const handlePlayMana = (cardId: string) => {
     if (isPlayerTurn && !player.manaPlayedThisTurn) {
       playMana(cardId);
-      const entry: ActionLogEntry = {
-        id: ++actionLogId,
-        text: `Maná jugado: ${CARDS_DB[cardId]?.name ?? cardId}`,
-        timestamp: Date.now(),
-      };
-      setActionLog(prev => [...prev.slice(-2), entry]);
     }
   };
 
   const handleRestart = () => {
     const playerFaction = playerCommanderCard.faction === 'FURIA' ? 'FURIA' : 'ARCANO';
     startNewGame(playerFaction);
-    setActionLog([]);
   };
 
   const handleEndTurn = () => {
-    const entry: ActionLogEntry = {
-      id: ++actionLogId,
-      text: 'Turno finalizado por el jugador',
-      timestamp: Date.now(),
-    };
-    setActionLog(prev => [...prev.slice(-2), entry]);
     endActiveTurn();
   };
 
@@ -173,13 +179,32 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             {renderManaOrbs(oppFuriaAvail, opponent.manaSources.furia.total, 'furia')}
             <span className="mana-compact-num">{oppFuriaAvail}/{opponent.manaSources.furia.total}</span>
           </div>
+          <button
+            type="button"
+            className={`sound-toggle ${soundEnabled ? 'is-active' : ''}`}
+            onClick={toggleSound}
+            title={soundEnabled ? 'Desactivar sonido' : 'Activar sonido'}
+            aria-label={soundEnabled ? 'Desactivar sonido' : 'Activar sonido'}
+          >
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
         </div>
       </div>
 
       {/* ═══ CENTER LAYOUT: 3D BOARD & INSPECTOR SIDEBAR ═══ */}
       <div className="game-center-board">
         <div className="board-canvas-area">
-          <Board3D />
+          <BoardErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="board-loading" aria-label="Cargando el escenario">
+                  <span />
+                </div>
+              }
+            >
+              <Board3D />
+            </Suspense>
+          </BoardErrorBoundary>
         </div>
 
         {/* SIDEBAR DETAILED INSPECTOR */}
@@ -307,6 +332,14 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
               )
             ) : selectedCardInHand ? (
               <div className="sidebar-card-info animated-fade">
+                <div className="inspected-card-preview hand-card-preview">
+                  <CardDOM
+                    card={selectedCardInHand}
+                    mode="hand"
+                    isSelected
+                    isPlayable={isPlayerTurn}
+                  />
+                </div>
                 <h4>{selectedCardInHand.name}</h4>
                 <div className="badge-row-sidebar">
                   <span className="badge-type">{selectedCardInHand.subtype || selectedCardInHand.type}</span>
@@ -357,11 +390,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           {/* ACTION LOG */}
           <div className="action-log">
             <div className="action-log-title">📜 Registro</div>
-            {actionLog.length === 0 ? (
+            {gameEvents.length === 0 ? (
               <div className="action-log-empty">Sin acciones aún</div>
             ) : (
-              actionLog.map(entry => (
-                <div key={entry.id} className="action-log-entry">
+              gameEvents.map(entry => (
+                <div key={entry.id} className={`action-log-entry tone-${entry.tone}`}>
                   {entry.text}
                 </div>
               ))
@@ -691,6 +724,30 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
         .opponent-mana-compact {
           flex-direction: column;
           gap: 3px;
+          position: relative;
+          padding-right: 34px;
+        }
+        .sound-toggle {
+          position: absolute;
+          right: 0;
+          top: 50%;
+          width: 28px;
+          height: 28px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(188, 219, 235, 0.18);
+          border-radius: 50%;
+          color: #8aa5b5;
+          background: rgba(7, 17, 26, 0.72);
+          transform: translateY(-50%);
+          cursor: pointer;
+          transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+        .sound-toggle:hover,
+        .sound-toggle.is-active {
+          color: #dff7ff;
+          border-color: rgba(116, 215, 255, 0.5);
+          background: rgba(27, 83, 108, 0.52);
         }
         .mana-compact-group {
           display: flex;
@@ -750,6 +807,45 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           display: flex;
           flex-direction: column;
         }
+        .board-loading {
+          width: 100%;
+          height: 100%;
+          display: grid;
+          place-items: center;
+          background:
+            radial-gradient(circle at 50% 42%, rgba(174, 219, 250, 0.88), rgba(97, 145, 186, 0.9) 38%, rgba(26, 48, 78, 0.96));
+        }
+        .board-loading span {
+          width: 36px;
+          height: 36px;
+          border: 3px solid rgba(232, 248, 255, 0.38);
+          border-top-color: #ffffff;
+          border-radius: 50%;
+          animation: board-loading-spin 720ms linear infinite;
+        }
+        @keyframes board-loading-spin {
+          to { transform: rotate(360deg); }
+        }
+        .board-error-state {
+          width: 100%;
+          height: 100%;
+          display: grid;
+          place-items: center;
+          align-content: center;
+          gap: 12px;
+          color: #eff8ff;
+          background: #17263a;
+          text-align: center;
+        }
+        .board-error-state button {
+          min-width: 112px;
+          border: 1px solid rgba(214, 239, 255, 0.68);
+          border-radius: 5px;
+          padding: 8px 12px;
+          color: #ffffff;
+          background: rgba(79, 145, 198, 0.58);
+          cursor: pointer;
+        }
 
         /* ═══ SIDEBAR INSPECTOR ═══ */
         .hud-sidebar {
@@ -773,7 +869,9 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
         }
 
         .hud-sidebar .action-log {
-          display: none;
+          display: block;
+          flex: 0 0 74px;
+          min-height: 74px;
         }
 
         .inspector-card-hidden {
@@ -851,6 +949,13 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
         .inspected-card-preview .mode-hand {
           width: 154px;
           height: 220px;
+        }
+        .hand-card-preview {
+          height: 202px;
+        }
+        .hand-card-preview .mode-hand {
+          width: 140px;
+          height: 200px;
         }
 
         /* Circular stat badges */
@@ -1084,7 +1189,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           border: 1px solid rgba(255, 255, 255, 0.04);
           border-radius: 6px;
           padding: 6px 8px;
-          max-height: 80px;
+          max-height: 74px;
           overflow-y: auto;
         }
         .action-log-title {
@@ -1107,6 +1212,12 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           border-bottom: 1px solid rgba(255,255,255,0.03);
           animation: slide-up 0.2s ease-out;
         }
+        .action-log-entry.tone-move { color: #91d7ff; }
+        .action-log-entry.tone-attack { color: #ffb08a; }
+        .action-log-entry.tone-summon { color: #f7d783; }
+        .action-log-entry.tone-spell { color: #cbb7ff; }
+        .action-log-entry.tone-mana { color: #78e6ba; }
+        .action-log-entry.tone-system { color: #c3ced8; }
 
         .sidebar-footer-controls {
           margin-top: auto;

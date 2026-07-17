@@ -538,24 +538,72 @@ const EmberSeal: React.FC = () => (
 interface SanctuaryObstacleProps {
   entity: BoardEntity;
   onClick: () => void;
+  isCollapsing?: boolean;
+  onCollapseComplete?: () => void;
 }
 
-export const SanctuaryObstacle: React.FC<SanctuaryObstacleProps> = ({ entity, onClick }) => {
+export const SanctuaryObstacle: React.FC<SanctuaryObstacleProps> = ({
+  entity,
+  onClick,
+  isCollapsing = false,
+  onCollapseComplete,
+}) => {
   const node = getBoardVisualNode(entity.position);
+  const rootRef = useRef<THREE.Group>(null);
+  const collapseElapsedRef = useRef(0);
+  const collapseCompletedRef = useRef(false);
+  const previousHealthRef = useRef(entity.health);
+  const impactElapsedRef = useRef(1);
   const isEmberSeal = entity.cardId === 'obstaculo-lava';
   const isRidge = entity.cardId === 'obstaculo-risco';
   const isArcaneCurrent = entity.cardId === 'obstaculo-corriente';
   const rotationY = (entity.position.x + entity.position.y) % 2 === 0 ? 0.12 : Math.PI / 2 + 0.12;
+  const integrity = Math.max(0, Math.min(1, entity.health / entity.maxHealth));
+  const integrityColor = integrity > 0.55 ? '#8de6bb' : integrity > 0.25 ? '#ffd178' : '#ff8074';
+
+  useEffect(() => {
+    if (entity.health < previousHealthRef.current) impactElapsedRef.current = 0;
+    previousHealthRef.current = entity.health;
+  }, [entity.health]);
+
+  useFrame((_, delta) => {
+    if (!rootRef.current) return;
+
+    if (!isCollapsing) {
+      impactElapsedRef.current += delta;
+      if (impactElapsedRef.current < 0.28) {
+        const impact = Math.sin((impactElapsedRef.current / 0.28) * Math.PI);
+        rootRef.current.scale.set(1 + impact * 0.09, 0.9 + impact * 0.16, 1 + impact * 0.09);
+        rootRef.current.rotation.z = Math.sin(impactElapsedRef.current * 36) * 0.045;
+      } else {
+        rootRef.current.scale.set(1, 1, 1);
+        rootRef.current.rotation.z = 0;
+      }
+      return;
+    }
+
+    collapseElapsedRef.current += delta;
+    const progress = Math.min(1, collapseElapsedRef.current / 0.7);
+    rootRef.current.scale.setScalar(1 - progress * 0.84);
+    rootRef.current.rotation.z = Math.sin(progress * Math.PI) * 0.32;
+    rootRef.current.position.y = node.worldPosition[1] - progress * 0.38;
+
+    if (progress >= 1 && !collapseCompletedRef.current) {
+      collapseCompletedRef.current = true;
+      onCollapseComplete?.();
+    }
+  });
 
   return (
     <group
+      ref={rootRef}
       position={node.worldPosition}
-      onClick={(event) => {
+      onClick={isCollapsing ? undefined : (event) => {
         event.stopPropagation();
         onClick();
       }}
       onPointerEnter={() => {
-        document.body.style.cursor = 'pointer';
+        if (!isCollapsing) document.body.style.cursor = 'pointer';
       }}
       onPointerLeave={() => {
         document.body.style.cursor = 'default';
@@ -569,6 +617,18 @@ export const SanctuaryObstacle: React.FC<SanctuaryObstacleProps> = ({ entity, on
         <EmberSeal />
       ) : (
         <CrystalShrine />
+      )}
+      {!isCollapsing && (
+        <group position={[0, 1.78, 0]} rotation={[-0.52, 0, 0]}>
+          <mesh position={[0, 0, -0.012]}>
+            <boxGeometry args={[0.82, 0.075, 0.035]} />
+            <meshBasicMaterial color="#10212a" transparent opacity={0.86} depthWrite={false} />
+          </mesh>
+          <mesh position={[-(0.82 * (1 - integrity)) / 2, 0, -0.03]}>
+            <boxGeometry args={[0.82 * integrity, 0.042, 0.042]} />
+            <meshBasicMaterial color={integrityColor} transparent opacity={0.96} depthWrite={false} />
+          </mesh>
+        </group>
       )}
     </group>
   );

@@ -4,7 +4,10 @@ class AudioSynthService {
   private soundEnabled: boolean = false;
 
   init() {
-    if (this.ctx) return;
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      return;
+    }
     try {
       const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
       const AudioContextConstructor = typeof AudioContext !== 'undefined'
@@ -24,6 +27,7 @@ class AudioSynthService {
 
   toggleSound(enabled: boolean) {
     this.soundEnabled = enabled;
+    if (enabled) this.init();
   }
 
   // Soft card select/hover click

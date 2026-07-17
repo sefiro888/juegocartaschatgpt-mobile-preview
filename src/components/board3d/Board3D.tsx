@@ -9,7 +9,7 @@ import { FloatingSanctuary } from './FloatingSanctuary';
 import { BoardFoundation, SanctuaryObstacle } from './SanctuaryBoardAssets';
 import { SanctuaryMaterialsProvider, useSanctuaryMaterials } from './SanctuaryMaterials';
 import type { BoardEntity, Position } from '../../types/card';
-import { canAttackTarget, isAdjacent } from '../../core/engine';
+import { canAttackTarget, canSpellTargetObstacle, getCombatPreview, isAdjacent } from '../../core/engine';
 import { CARDS_DB } from '../../core/cardsDb';
 import { PLAYER_BACK_ROW } from '../../core/boardConfig';
 import {
@@ -304,6 +304,58 @@ const DeathExplosion3D: React.FC<DeathExplosion3DProps> = ({ worldPosition, fact
   );
 };
 
+interface ObstacleCollapseBurst3DProps {
+  worldPosition: WorldPoint;
+  cardId: string;
+}
+
+const ObstacleCollapseBurst3D: React.FC<ObstacleCollapseBurst3DProps> = ({ worldPosition, cardId }) => {
+  const burstRef = useRef<THREE.Group>(null);
+  const elapsedRef = useRef(0);
+  const isArcane = cardId === 'obstaculo-pilar' || cardId === 'obstaculo-corriente';
+  const color = isArcane ? '#86e6ff' : '#d6e3e8';
+
+  useFrame((_, delta) => {
+    if (!burstRef.current) return;
+    elapsedRef.current += delta;
+    const progress = Math.min(1, elapsedRef.current / 0.7);
+    burstRef.current.scale.setScalar(0.45 + progress * 2.4);
+    burstRef.current.rotation.y += delta * 2.8;
+    burstRef.current.children.forEach((child, index) => {
+      child.position.y += (0.18 + (index % 3) * 0.045) * delta;
+    });
+  });
+
+  return (
+    <group ref={burstRef} position={[worldPosition[0], worldPosition[1] + 0.24, worldPosition[2]]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.2, 0.3, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.78} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+      {Array.from({ length: 12 }, (_, index) => {
+        const angle = (index / 12) * Math.PI * 2;
+        const radius = 0.18 + (index % 4) * 0.09;
+        return (
+          <mesh
+            key={index}
+            position={[Math.cos(angle) * radius, 0.08 + (index % 3) * 0.05, Math.sin(angle) * radius]}
+            rotation={[index * 0.43, angle, index * 0.31]}
+          >
+            <dodecahedronGeometry args={[0.06 + (index % 3) * 0.018, 0]} />
+            <meshStandardMaterial
+              color={isArcane ? '#c2f6ff' : '#9eafb9'}
+              emissive={isArcane ? '#167ba1' : '#273b45'}
+              emissiveIntensity={isArcane ? 1.05 : 0.26}
+              roughness={0.76}
+            />
+          </mesh>
+        );
+      })}
+      <pointLight color={color} intensity={isArcane ? 2.4 : 1.25} distance={3.2} decay={2} />
+    </group>
+  );
+};
+
 interface AttackAnimation3DProps {
   from: WorldPoint;
   to: WorldPoint;
@@ -382,6 +434,38 @@ const AttackAnimation3D: React.FC<AttackAnimation3DProps> = ({ from, to, faction
   );
 };
 
+interface TacticalPreviewPanelProps {
+  title: string;
+  detail: string;
+  tone: 'move' | 'attack';
+  primaryValue: number;
+  secondaryValue?: number;
+  primaryLabel: string;
+  secondaryLabel?: string;
+  warning?: string;
+}
+
+const TacticalPreviewPanel: React.FC<TacticalPreviewPanelProps> = ({
+  title,
+  detail,
+  tone,
+  primaryValue,
+  secondaryValue,
+  primaryLabel,
+  secondaryLabel,
+  warning,
+}) => (
+  <aside className={`tactical-preview tactical-preview-${tone}`} aria-live="polite">
+    <div className="tactical-preview-kicker">{title}</div>
+    <div className="tactical-preview-detail">{detail}</div>
+    <div className="tactical-preview-values">
+      <span><strong>{primaryValue}</strong>{primaryLabel}</span>
+      {secondaryValue !== undefined && secondaryLabel && <span><strong>{secondaryValue}</strong>{secondaryLabel}</span>}
+    </div>
+    {warning && <div className="tactical-preview-warning">{warning}</div>}
+  </aside>
+);
+
 function isEntityVisible(entity: BoardEntity, board: Record<string, BoardEntity>): boolean {
   if (entity.controller === 'PLAYER' || entity.cardId.startsWith('obstaculo-')) return true;
   if (entity.position.y <= 2) return true;
@@ -426,6 +510,7 @@ export const Board3D: React.FC = () => {
     selectedCardInHand,
     selectedEntity,
     hoveredEntity,
+    presentationAction,
     selectEntity,
     setHoveredEntity,
     summon,
@@ -434,6 +519,7 @@ export const Board3D: React.FC = () => {
     castSpell,
   } = useGameStore();
   const [deathExplosions, setDeathExplosions] = useState<Array<{ id: string; position: Position; faction: string }>>([]);
+  const [obstacleCollapses, setObstacleCollapses] = useState<Array<{ id: string; entity: BoardEntity }>>([]);
   const [movementAnimationRoutes, setMovementAnimationRoutes] = useState<Record<string, Position[]>>({});
   const [attackAnimations, setAttackAnimations] = useState<Array<{
     id: string;
@@ -448,12 +534,58 @@ export const Board3D: React.FC = () => {
   const previousBoardRef = useRef<Record<string, BoardEntity>>({});
 
   useEffect(() => {
+    if (!presentationAction || !gameState) return;
+    const actionTo = presentationAction.to;
+    if (!actionTo) return;
+
+    const actionFrom = presentationAction.from;
+    if (presentationAction.kind === 'attack' && actionFrom && presentationAction.actorId) {
+      const card = presentationAction.cardId ? CARDS_DB[presentationAction.cardId] : undefined;
+      setAttackAnimations((current) => [
+        ...current,
+        {
+          id: `ai-${presentationAction.id}`,
+          attackerId: presentationAction.actorId ?? '',
+          targetId: presentationAction.targetId ?? '',
+          from: { ...actionFrom },
+          to: { ...actionTo },
+          faction: card?.faction ?? 'ARCANO',
+        },
+      ]);
+    }
+
+    if (presentationAction.kind === 'spell') {
+      const opponentCommander = Object.values(gameState.board).find((entity) => entity.id === 'commander-opponent');
+      const card = presentationAction.cardId ? CARDS_DB[presentationAction.cardId] : undefined;
+      if (!opponentCommander) return;
+      setAttackAnimations((current) => [
+        ...current,
+        {
+          id: `ai-spell-${presentationAction.id}`,
+          attackerId: `spell-${presentationAction.id}`,
+          targetId: presentationAction.targetId ?? '',
+          from: { ...opponentCommander.position },
+          to: { ...actionTo },
+          faction: card?.faction ?? 'ARCANO',
+        },
+      ]);
+    }
+  }, [gameState, presentationAction]);
+
+  useEffect(() => {
     if (!gameState) return;
     const previousBoard = previousBoardRef.current;
     const currentIds = new Set(Object.values(gameState.board).map((entity) => entity.id));
 
     for (const previousEntity of Object.values(previousBoard)) {
       if (!currentIds.has(previousEntity.id)) {
+        if (isBoardObstacle(previousEntity)) {
+          setObstacleCollapses((current) => [
+            ...current,
+            { id: `${previousEntity.id}-collapse-${Date.now()}`, entity: previousEntity },
+          ]);
+          continue;
+        }
         const card = CARDS_DB[previousEntity.cardId];
         setDeathExplosions((current) => [
           ...current,
@@ -504,7 +636,10 @@ export const Board3D: React.FC = () => {
       let highlight: NodeHighlight = null;
 
       if (selectedCardInHand?.type === 'HECHIZO') {
-        if (occupant && !isBoardObstacle(occupant) && !CARDS_DB[occupant.cardId]?.rulesText.includes('Inmune a Hechizos')) {
+        if (occupant && (
+          (isBoardObstacle(occupant) && canSpellTargetObstacle(selectedCardInHand.id))
+          || (!isBoardObstacle(occupant) && !CARDS_DB[occupant.cardId]?.rulesText.includes('Inmune a Hechizos'))
+        )) {
           if (selectedCardInHand.id === 'destello-runico') {
             const commander = Object.values(gameState.board).find((entity) => entity.id === 'commander-player');
             if (commander && isAdjacent(commander.position, node.logicalPosition, false)) highlight = 'spell';
@@ -527,8 +662,7 @@ export const Board3D: React.FC = () => {
           if (!occupant && movementRoutesByKey.has(key)) {
             highlight = 'move';
           } else if (
-            occupant?.controller === 'OPPONENT' &&
-            !isBoardObstacle(occupant) &&
+            (occupant?.controller === 'OPPONENT' || isBoardObstacle(occupant)) &&
             canAttackTarget(gameState, selectedEntity.position, node.logicalPosition) &&
             !selectedEntity.hasAttackedThisTurn &&
             CARDS_DB[selectedEntity.cardId]?.type !== 'ESTRUCTURA'
@@ -616,6 +750,49 @@ export const Board3D: React.FC = () => {
         }];
       })
     : [];
+
+  const tacticalPreview = (() => {
+    if (!selectedEntity || !hoveredTacticalNodeId) return null;
+    const node = BOARD_VISUAL_NODES.find((candidate) => candidate.id === hoveredTacticalNodeId);
+    if (!node) return null;
+    const highlight = highlightByNodeId.get(node.id);
+    const destination = `${String.fromCharCode(65 + node.logicalPosition.x)}${node.logicalPosition.y + 1}`;
+
+    if (highlight === 'move') {
+      const route = movementRoutesByKey.get(positionKey(node.logicalPosition));
+      const steps = Math.max(0, (route?.length ?? 1) - 1);
+      return {
+        title: 'RUTA PREVISTA',
+        detail: `Destino ${destination}`,
+        tone: 'move' as const,
+        primaryValue: steps,
+        primaryLabel: steps === 1 ? ' paso' : ' pasos',
+        warning: node.heightLevel > 0 ? 'El destino está en terreno elevado.' : undefined,
+      };
+    }
+
+    if (highlight === 'attack') {
+      const preview = getCombatPreview(gameState, selectedEntity.position, node.logicalPosition);
+      if (!preview) return null;
+      const warnings = [
+        preview.targetWillFall ? 'El objetivo caerá.' : undefined,
+        preview.attackerWillFall ? 'Tu unidad caerá en el intercambio.' : undefined,
+        preview.notes[0],
+      ].filter(Boolean).join(' ');
+      return {
+        title: 'COMBATE PREVISTO',
+        detail: `Objetivo ${destination}`,
+        tone: 'attack' as const,
+        primaryValue: preview.damageToTarget,
+        primaryLabel: ' daño',
+        secondaryValue: preview.damageToAttacker,
+        secondaryLabel: ' respuesta',
+        warning: warnings || undefined,
+      };
+    }
+
+    return null;
+  })();
 
   return (
     <div
@@ -722,6 +899,23 @@ export const Board3D: React.FC = () => {
             />
           ))}
 
+          {obstacleCollapses.map((collapse) => (
+            <React.Fragment key={collapse.id}>
+              <SanctuaryObstacle
+                entity={collapse.entity}
+                onClick={() => undefined}
+                isCollapsing
+                onCollapseComplete={() => {
+                  setObstacleCollapses((current) => current.filter((candidate) => candidate.id !== collapse.id));
+                }}
+              />
+              <ObstacleCollapseBurst3D
+                worldPosition={getBoardVisualNode(collapse.entity.position).worldPosition}
+                cardId={collapse.entity.cardId}
+              />
+            </React.Fragment>
+          ))}
+
           <OrbitControls
             makeDefault
             target={CAMERA_TARGET}
@@ -730,13 +924,13 @@ export const Board3D: React.FC = () => {
             dampingFactor={0.075}
             minPolarAngle={0.72}
             maxPolarAngle={1.05}
-            minAzimuthAngle={-0.05}
-            maxAzimuthAngle={0.78}
             minDistance={24}
             maxDistance={36}
           />
         </SanctuaryMaterialsProvider>
       </Canvas>
+
+      {tacticalPreview && <TacticalPreviewPanel {...tacticalPreview} />}
 
       {canvasStatus === 'lost' && (
         <div className="canvas-recovery" role="alert">
@@ -760,6 +954,51 @@ export const Board3D: React.FC = () => {
           width: 100%;
           height: 100%;
           touch-action: none;
+        }
+        .tactical-preview {
+          position: absolute;
+          z-index: 26;
+          top: 82px;
+          left: 20px;
+          width: 178px;
+          padding: 10px 11px;
+          border: 1px solid rgba(181, 221, 238, 0.35);
+          border-radius: 7px;
+          color: #eaf6fb;
+          background: rgba(7, 18, 28, 0.82);
+          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+          backdrop-filter: blur(10px);
+          pointer-events: none;
+        }
+        .tactical-preview-move { border-color: rgba(107, 199, 255, 0.7); }
+        .tactical-preview-attack { border-color: rgba(255, 120, 107, 0.72); }
+        .tactical-preview-kicker {
+          color: #a7c7d6;
+          font-size: 0.61rem;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+        }
+        .tactical-preview-detail {
+          margin-top: 4px;
+          color: #f5fbff;
+          font-size: 0.82rem;
+          font-weight: 700;
+        }
+        .tactical-preview-values {
+          display: flex;
+          gap: 10px;
+          margin-top: 7px;
+          color: #b9d6e3;
+          font-size: 0.65rem;
+        }
+        .tactical-preview-values span { display: flex; align-items: baseline; gap: 3px; }
+        .tactical-preview-values strong { color: #fff; font-size: 1rem; }
+        .tactical-preview-attack .tactical-preview-values strong { color: #ffb5a5; }
+        .tactical-preview-warning {
+          margin-top: 7px;
+          color: #d7e9f1;
+          font-size: 0.63rem;
+          line-height: 1.35;
         }
         .canvas-recovery {
           position: absolute;

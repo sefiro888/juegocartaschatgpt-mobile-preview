@@ -48,13 +48,19 @@ describe('AI Battle Simulation Run', () => {
     state.opponent.hand.unshift({ ...CARDS_DB['fuente-arcano'] });
     state.opponent.hand.unshift({ ...CARDS_DB['tejedora-escarcha'] });
 
-    // Run AI turn
-    state = executeAITurn(state);
+    // Run AI turn and retain the presentation timeline.
+    const observedActions: string[] = [];
+    state = executeAITurn(state, (step) => {
+      observedActions.push(step.kind);
+      expect(step.state.activePlayer).toBe('OPPONENT');
+    });
     
     // AI turn should play mana, summon tejedora-escarcha, and end turn
     // (state.activePlayer returns to PLAYER, and turn count increments to 2)
     expect(state.activePlayer).toBe('PLAYER');
     expect(state.turn).toBe(2);
+    expect(observedActions).toContain('mana');
+    expect(observedActions).toContain('summon');
 
     // ═══════════════════════════════════════════════════
     // TURN 2: PLAYER ACTIONS (MOVEMENT & COMBAT)

@@ -71,13 +71,82 @@ export function canAttackTarget(
 ): boolean {
   const attacker = state.board[`${attackerPosition.x},${attackerPosition.y}`];
   const target = state.board[`${targetPosition.x},${targetPosition.y}`];
-  if (!attacker || !target || isBoardObstacle(target)) return false;
-  if (attacker.controller !== state.activePlayer || attacker.controller === target.controller) return false;
+  if (!attacker || !target) return false;
+  if (attacker.controller !== state.activePlayer) return false;
   if (attacker.hasAttackedThisTurn || attacker.frozenTurns > 0) return false;
 
   const card = CARDS_DB[attacker.cardId];
   if (!card || card.type === 'ESTRUCTURA') return false;
+  // Terrain is neutral: either player can clear it, but it never retaliates.
+  if (isBoardObstacle(target)) {
+    return isInCardAttackGeometry(state.board, attackerPosition, targetPosition, card);
+  }
+  if (attacker.controller === target.controller) return false;
   return isInCardAttackGeometry(state.board, attackerPosition, targetPosition, card);
+}
+
+export function canSpellTargetObstacle(cardId: string): boolean {
+  return cardId === 'lluvia-ceniza' || cardId === 'chispa-fugaz' || cardId === 'cometa-arcano';
+}
+
+export interface CombatPreview {
+  damageToTarget: number;
+  damageToAttacker: number;
+  targetCanRetaliate: boolean;
+  targetWillFall: boolean;
+  attackerWillFall: boolean;
+  notes: string[];
+}
+
+export function getCombatPreview(
+  state: GameState,
+  attackerPosition: Position,
+  targetPosition: Position,
+): CombatPreview | null {
+  const attacker = state.board[`${attackerPosition.x},${attackerPosition.y}`];
+  const target = state.board[`${targetPosition.x},${targetPosition.y}`];
+  if (!attacker || !target || !canAttackTarget(state, attackerPosition, targetPosition)) return null;
+
+  const attackerCard = CARDS_DB[attacker.cardId];
+  const targetCard = CARDS_DB[target.cardId];
+  if (!attackerCard || (!targetCard && !isBoardObstacle(target))) return null;
+
+  const notes: string[] = [];
+  let damageToTarget = attacker.attack;
+  if (targetCard?.rulesText.includes('Resistencia')) {
+    damageToTarget = Math.max(0, damageToTarget - 1);
+    notes.push('El objetivo reduce 1 de daño.');
+  }
+  if ((target.id === 'commander-player' || target.id === 'commander-opponent') && hasTemploRunico(state.board, target.controller)) {
+    damageToTarget = Math.max(0, damageToTarget - 1);
+    notes.push('El templo rúnico protege al comandante.');
+  }
+
+  const targetCanRetaliate = !isBoardObstacle(target) && targetCard?.type !== 'ESTRUCTURA' &&
+    isInCardAttackGeometry(state.board, target.position, attacker.position, targetCard);
+  let damageToAttacker = targetCanRetaliate ? target.attack : 0;
+  if (attackerCard.rulesText.includes('Resistencia')) {
+    damageToAttacker = Math.max(0, damageToAttacker - 1);
+    notes.push('Tu unidad reduce 1 de daño.');
+  }
+  if ((attacker.id === 'commander-player' || attacker.id === 'commander-opponent') && hasTemploRunico(state.board, attacker.controller)) {
+    damageToAttacker = Math.max(0, damageToAttacker - 1);
+    notes.push('El templo rúnico protege a tu comandante.');
+  }
+  if (!targetCanRetaliate) notes.push('El objetivo no puede contraatacar.');
+  if (attackerCard.id === 'berserker-ignivoro') {
+    damageToAttacker += 1;
+    notes.push('Furia: tu berserker se hiere por atacar.');
+  }
+
+  return {
+    damageToTarget,
+    damageToAttacker,
+    targetCanRetaliate,
+    targetWillFall: target.health - damageToTarget <= 0,
+    attackerWillFall: attacker.health - damageToAttacker <= 0,
+    notes,
+  };
 }
 
 // Deep-clone a PlayerState to avoid shared-reference mutation
@@ -255,8 +324,8 @@ export function initializeGame(
     board[`${obstacle.position.x},${obstacle.position.y}`] = {
       ...obstacle,
       controller: 'OPPONENT',
-      health: 99,
-      maxHealth: 99,
+      health: CARDS_DB[obstacle.cardId]?.maxHealth ?? 4,
+      maxHealth: CARDS_DB[obstacle.cardId]?.maxHealth ?? 4,
       attack: 0,
       hasMovedThisTurn: true,
       hasAttackedThisTurn: true,
@@ -639,7 +708,7 @@ export function combatAttack(state: GameState, attackerPos: Position, targetPos:
     damageToAttacker = Math.max(0, damageToAttacker - 1);
   }
 
-  // Apply damage
+  // Apply damage. Neutral terrain is removed instead of entering a player's graveyard.
   target.health -= damageToTarget;
   if (tarCard && tarCard.type !== 'ESTRUCTURA') {
     // Structures don't strike back
@@ -678,7 +747,9 @@ export function combatAttack(state: GameState, attackerPos: Position, targetPos:
   }
 
   // Resolve deaths
-  if (target.health <= 0) {
+  if (target.health <= 0 && isBoardObstacle(target)) {
+    delete newBoard[tarKey];
+  } else if (target.health <= 0) {
     const savedCardId = target.cardId;
     const savedPos = { ...target.position };
     const w = resolveEntityDeath(newBoard, tarKey, target, player1, player2);
@@ -725,7 +796,7 @@ export function playSpell(
   if (targetPos) {
     const targetKey = `${targetPos.x},${targetPos.y}`;
     const targetEnt = state.board[targetKey];
-    if (isBoardObstacle(targetEnt)) return state;
+    if (isBoardObstacle(targetEnt) && !canSpellTargetObstacle(cardId)) return state;
     if (targetEnt && CARDS_DB[targetEnt.cardId]?.rulesText.includes('Inmune a Hechizos')) {
       return state; // Cast is blocked / invalid
     }
@@ -746,9 +817,13 @@ export function playSpell(
   // --- Helper to deal damage to an entity by position key ---
   const dealDamageAtKey = (key: string, damage: number) => {
     const ent = nextBoard[key];
-    if (!ent || isBoardObstacle(ent)) return;
+    if (!ent) return;
     ent.health -= damage;
     if (ent.health <= 0) {
+      if (isBoardObstacle(ent)) {
+        delete nextBoard[key];
+        return;
+      }
       const savedCardId = ent.cardId;
       const savedPos = { ...ent.position };
       const w = resolveEntityDeath(nextBoard, key, ent, pState1, pState2);
@@ -856,7 +931,6 @@ export function playSpell(
     for (const key of entityKeys) {
       if (!nextBoard[key]) continue; // May have been removed by chain deaths
       const ent = nextBoard[key];
-      if (isBoardObstacle(ent)) continue;
       // Deal damage to all units (including commanders and structures per card text: "todas las unidades en el tablero")
       if (ent.id === 'commander-player' || ent.id === 'commander-opponent') continue; // Skip commanders for balance
       ent.health -= 2;
