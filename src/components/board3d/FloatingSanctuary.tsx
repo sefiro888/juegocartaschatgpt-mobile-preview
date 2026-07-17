@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Sparkles, useGLTF, useTexture } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { resolvePublicAsset } from '../../core/publicAssets';
 import type { WorldPoint } from '../../core/boardVisualLayout';
@@ -187,6 +187,8 @@ const SkyDome: React.FC = () => {
 const SkyBackdropPlate: React.FC = () => {
   const backdropRef = useRef<THREE.Sprite>(null);
   const skyTexture = useTexture(SKY_PLATE_URL);
+  const { camera } = useThree();
+  const cameraDirection = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
     skyTexture.colorSpace = THREE.SRGBColorSpace;
@@ -194,16 +196,24 @@ const SkyBackdropPlate: React.FC = () => {
     skyTexture.needsUpdate = true;
   }, [skyTexture]);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (!backdropRef.current) return;
-    const elapsed = state.clock.getElapsedTime();
-    backdropRef.current.position.x = Math.sin(elapsed * 0.009) * 0.7;
-    backdropRef.current.position.y = -20.0 + Math.cos(elapsed * 0.007) * 0.16;
+    camera.getWorldDirection(cameraDirection);
+    backdropRef.current.position
+      .copy(camera.position)
+      .addScaledVector(cameraDirection, 108);
   });
 
   return (
-    <sprite ref={backdropRef} position={[0, -20, -58]} scale={[182, 73, 1]} renderOrder={-12} frustumCulled={false}>
-      <spriteMaterial map={skyTexture} color="#c7d7e4" depthWrite={false} fog={false} toneMapped={false} />
+    <sprite ref={backdropRef} scale={[230, 92, 1]} renderOrder={-12} frustumCulled={false}>
+      <spriteMaterial
+        map={skyTexture}
+        color="#c7d7e4"
+        depthTest={false}
+        depthWrite={false}
+        fog={false}
+        toneMapped={false}
+      />
     </sprite>
   );
 };
