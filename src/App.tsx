@@ -11,6 +11,11 @@ const DeckViewer = lazy(async () => {
   return { default: module.DeckViewer };
 });
 
+const OnlineLobby = lazy(async () => {
+  const module = await import('./components/OnlineLobby');
+  return { default: module.OnlineLobby };
+});
+
 const loadGameHUD = () => import('./components/GameHUD');
 
 const GameHUD = lazy(async () => {
@@ -18,7 +23,7 @@ const GameHUD = lazy(async () => {
   return { default: module.GameHUD };
 });
 
-type ViewMode = 'menu' | 'faction-select' | 'game' | 'gallery' | 'deck-viewer';
+type ViewMode = 'menu' | 'faction-select' | 'online-lobby' | 'game' | 'gallery' | 'deck-viewer';
 
 class ViewErrorBoundary extends Component<
   { children: ReactNode; onExit: () => void },
@@ -102,6 +107,12 @@ function App() {
     }
   }, [transitioning, nextView]);
 
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).get('sala')) return;
+    void loadGameHUD();
+    setView('online-lobby');
+  }, []);
+
   const handleSelectFaction = (faction: 'FURIA' | 'ARCANO', theme: string) => {
     startNewGame(faction, theme);
     navigateTo('game');
@@ -110,6 +121,11 @@ function App() {
   const handleStartGameFlow = () => {
     void loadGameHUD();
     navigateTo('faction-select');
+  };
+
+  const handleOnlineGameFlow = () => {
+    void loadGameHUD();
+    navigateTo('online-lobby');
   };
 
   const handleViewRecovery = () => {
@@ -132,6 +148,9 @@ function App() {
           </div>
 
           <div className="menu-actions glass-panel">
+            <button className="menu-btn online" onClick={handleOnlineGameFlow}>
+              Jugar con un amigo
+            </button>
             <button className="menu-btn primary" onClick={handleStartGameFlow}>
               ⚔️ Jugar contra la IA
             </button>
@@ -304,6 +323,13 @@ function App() {
       <ViewErrorBoundary key={viewRecoveryVersion} onExit={handleViewRecovery}>
         <Suspense fallback={<div className="view-loading-indicator" aria-label="Cargando vista" />}>
           {view === 'game' && <GameHUD onQuit={() => navigateTo('menu')} />}
+          {view === 'online-lobby' && (
+            <OnlineLobby
+              initialRoomCode={new URLSearchParams(window.location.search).get('sala') ?? ''}
+              onEnterGame={() => navigateTo('game')}
+              onBack={() => navigateTo('menu')}
+            />
+          )}
           {view === 'gallery' && <Gallery onBack={() => navigateTo('menu')} />}
           {view === 'deck-viewer' && <DeckViewer onBack={() => navigateTo('menu')} />}
         </Suspense>
@@ -469,6 +495,18 @@ function App() {
         .menu-btn.primary:hover {
           transform: translateY(-3px) scale(1.02);
           box-shadow: 0 8px 30px rgba(79, 70, 229, 0.6);
+        }
+
+        .menu-btn.online {
+          color: #e4fbff;
+          border-color: rgba(103, 216, 255, 0.52);
+          background: linear-gradient(135deg, rgba(17, 127, 162, 0.94), rgba(25, 72, 139, 0.94));
+          box-shadow: 0 4px 15px rgba(45, 174, 224, 0.22);
+        }
+        .menu-btn.online:hover {
+          transform: translateY(-3px) scale(1.02);
+          border-color: rgba(157, 237, 255, 0.9);
+          box-shadow: 0 8px 28px rgba(45, 174, 224, 0.38);
         }
 
         .menu-btn.secondary {

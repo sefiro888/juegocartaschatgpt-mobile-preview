@@ -4,6 +4,8 @@ import { CardDOM } from './CardDOM';
 import { CARDS_DB } from '../core/cardsDb';
 import type { BoardEntity } from '../types/card';
 import { Volume2, VolumeX } from 'lucide-react';
+import { getObstacleDefinition } from '../core/obstacleConfig';
+import { isBoardObstacle } from '../core/boardPathfinding';
 
 const Board3D = lazy(async () => {
   const module = await import('./board3d/Board3D');
@@ -37,6 +39,35 @@ class BoardErrorBoundary extends React.Component<
   }
 }
 
+const TerrainInspector: React.FC<{ entity: BoardEntity }> = ({ entity }) => {
+  const obstacle = getObstacleDefinition(entity.cardId);
+  const integrityPercent = Math.max(0, Math.min(100, (entity.health / entity.maxHealth) * 100));
+
+  return (
+    <div className="terrain-inspector animated-fade">
+      <div className="terrain-inspector-crest" aria-hidden="true">+</div>
+      <div className="terrain-inspector-heading">
+        <span>{obstacle.terrainLabel}</span>
+        <h4>{obstacle.name}</h4>
+      </div>
+      <div className="terrain-integrity">
+        <div className="terrain-integrity-label">
+          <span>Integridad</span>
+          <strong>{entity.health}/{entity.maxHealth}</strong>
+        </div>
+        <div className="terrain-integrity-track" aria-label={`Integridad ${entity.health} de ${entity.maxHealth}`}>
+          <span style={{ width: `${integrityPercent}%` }} />
+        </div>
+      </div>
+      <div className="terrain-rule-list">
+        <span>Bloquea movimiento y rutas a traves de esta casilla.</span>
+        <span>Los ataques y hechizos de dano pueden derribarlo.</span>
+      </div>
+      <p className="terrain-description">{obstacle.description}</p>
+    </div>
+  );
+};
+
 interface GameHUDProps {
   onQuit?: () => void;
 }
@@ -56,17 +87,20 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     playMana,
     endActiveTurn,
     startNewGame,
+    leaveOnlineGame,
     isAIThinking,
     soundEnabled,
     toggleSound,
+    localController,
+    onlineSession,
   } = useGameStore();
 
   const isEntityVisibleInHUD = (entity: BoardEntity) => {
     if (!gameState) return true;
-    if (entity.controller === 'PLAYER') return true;
+    if (entity.controller === localController) return true;
     if (entity.cardId.startsWith('obstaculo-')) return true;
 
-    const playerEntities = Object.values(gameState.board).filter((candidate) => candidate.controller === 'PLAYER');
+    const playerEntities = Object.values(gameState.board).filter((candidate) => candidate.controller === localController);
     if (entity.position.y <= 2) return true;
 
     return playerEntities.some((playerEntity) => {
@@ -78,7 +112,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
   const turn = gameState?.turn || 0;
   const activePlayer = gameState?.activePlayer || 'PLAYER';
-  const isPlayerTurn = activePlayer === 'PLAYER';
+  const isPlayerTurn = activePlayer === localController;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -102,12 +136,18 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
   if (!gameState) return null;
 
-  const { player, opponent, winner } = gameState;
+  const { player: playerState, opponent: opponentState, winner } = gameState;
+  const player = localController === 'PLAYER' ? playerState : opponentState;
+  const opponent = localController === 'PLAYER' ? opponentState : playerState;
   const playerCommanderCard = CARDS_DB[player.commander.id];
 
   // Retrieve health from the actual commander entities on the board
-  const playerCommanderEntity = Object.values(gameState.board).find(ent => ent.id === 'commander-player');
-  const opponentCommanderEntity = Object.values(gameState.board).find(ent => ent.id === 'commander-opponent');
+  const playerCommanderEntity = Object.values(gameState.board).find(
+    (entity) => entity.id === (localController === 'PLAYER' ? 'commander-player' : 'commander-opponent'),
+  );
+  const opponentCommanderEntity = Object.values(gameState.board).find(
+    (entity) => entity.id === (localController === 'PLAYER' ? 'commander-opponent' : 'commander-player'),
+  );
 
   const playerHealth = playerCommanderEntity ? playerCommanderEntity.health : 0;
   const opponentHealth = opponentCommanderEntity ? opponentCommanderEntity.health : 0;
@@ -125,6 +165,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
   const handleEndTurn = () => {
     endActiveTurn();
+  };
+
+  const handleQuit = () => {
+    if (onlineSession) void leaveOnlineGame();
+    onQuit?.();
   };
 
   /** Render mana orbs (colored circles) */
@@ -151,7 +196,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
       {/* ═══ TOP BAR: OPPONENT INFO | TURN/PHASE | OPP MANA ═══ */}
       <div className="hud-top-bar glass-panel">
         <div className="top-section opponent-info-compact">
-          <span className="commander-tag opponent">🤖 RIVAL (IA)</span>
+          <span className="commander-tag opponent">{onlineSession ? 'RIVAL (ONLINE)' : '🤖 RIVAL (IA)'}</span>
           <div className="nexo-health-bar-mini">
             <div className="nexo-bar-fill opponent" style={{ width: `${Math.max(0, (opponentHealth / 25) * 100)}%` }} />
             <span className="nexo-bar-text">❤️ {opponentHealth}/25</span>
@@ -166,7 +211,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             <span className="turn-label">TURNO {turn}</span>
           </div>
           <span className={`phase-tag ${isPlayerTurn ? 'player' : 'opponent'}`}>
-            {isPlayerTurn ? '⚔️ Tu Turno' : '🤖 IA Pensando...'}
+            {isPlayerTurn ? '⚔️ Tu Turno' : onlineSession ? 'Esperando al rival...' : '🤖 IA Pensando...'}
           </span>
         </div>
 
@@ -221,7 +266,9 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           
           <div className="inspector-content">
             {hoveredEntity ? (
-              !isEntityVisibleInHUD(hoveredEntity) ? (
+              isBoardObstacle(hoveredEntity) ? (
+                <TerrainInspector entity={hoveredEntity} />
+              ) : !isEntityVisibleInHUD(hoveredEntity) ? (
                 <div className="inspector-card-hidden">
                   <div className="inspected-card-preview-hidden">
                     <div className="hidden-card-placeholder">
@@ -276,7 +323,9 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
                 </div>
               )
             ) : selectedEntity ? (
-              !isEntityVisibleInHUD(selectedEntity) ? (
+              isBoardObstacle(selectedEntity) ? (
+                <TerrainInspector entity={selectedEntity} />
+              ) : !isEntityVisibleInHUD(selectedEntity) ? (
                 <div className="inspector-card-hidden">
                   <div className="inspected-card-preview-hidden">
                     <div className="hidden-card-placeholder">
@@ -414,7 +463,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             >
               {isPlayerTurn ? '⚡ Finalizar Turno' : '⏳ Esperando...'}
             </button>
-            <button className="action-btn surrender" onClick={onQuit}>
+            <button className="action-btn surrender" onClick={handleQuit}>
               🏳️ Rendirse
             </button>
           </div>
@@ -508,23 +557,25 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
       {/* ═══ VICTORY / DEFEAT CINEMATIC OVERLAY ═══ */}
       {winner && (
         <div className="game-over-overlay">
-          <div className={`game-over-box glass-panel ${winner === 'PLAYER' ? 'victory' : 'defeat'}`}>
+          <div className={`game-over-box glass-panel ${winner === localController ? 'victory' : 'defeat'}`}>
             <div className="game-over-icon">
-              {winner === 'PLAYER' ? '🏆' : '💀'}
+              {winner === localController ? '🏆' : '💀'}
             </div>
-            <h2 className={winner === 'PLAYER' ? 'victory-title' : 'defeat-title'}>
-              {winner === 'PLAYER' ? '¡VICTORIA!' : 'DERROTA'}
+            <h2 className={winner === localController ? 'victory-title' : 'defeat-title'}>
+              {winner === localController ? '¡VICTORIA!' : 'DERROTA'}
             </h2>
             <p className="game-over-desc">
-              {winner === 'PLAYER'
-                ? 'Has defendido con éxito tu Nexo y derrotado a la Inteligencia Artificial.'
-                : 'Tu Comandante ha caído en combate. El Nexo ha sido destruido.'}
+              {winner === localController
+                ? onlineSession ? 'Has defendido con exito tu Nexo y derrotado a tu rival.' : 'Has defendido con exito tu Nexo y derrotado a la Inteligencia Artificial.'
+                : onlineSession ? 'Tu rival ha derribado tu Nexo.' : 'Tu Comandante ha caido en combate. El Nexo ha sido destruido.'}
             </p>
             <div className="game-over-buttons">
-              <button className="game-over-btn primary" onClick={handleRestart}>
-                ⚔️ Jugar de Nuevo
-              </button>
-              <button className="game-over-btn secondary" onClick={onQuit}>
+              {!onlineSession && (
+                <button className="game-over-btn primary" onClick={handleRestart}>
+                  ⚔️ Jugar de Nuevo
+                </button>
+              )}
+              <button className="game-over-btn secondary" onClick={handleQuit}>
                 🏠 Volver al Menú
               </button>
             </div>
@@ -943,6 +994,98 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           flex-direction: column;
           gap: 10px;
           animation: slide-up 0.25s ease-out;
+        }
+
+        .terrain-inspector {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 6px 2px;
+        }
+        .terrain-inspector-crest {
+          width: 76px;
+          height: 76px;
+          display: grid;
+          place-items: center;
+          align-self: center;
+          border: 1px solid rgba(119, 213, 255, 0.48);
+          border-radius: 50%;
+          color: #d7f6ff;
+          font-size: 2rem;
+          font-weight: 300;
+          background: radial-gradient(circle at 35% 28%, rgba(149, 235, 255, 0.34), rgba(32, 75, 101, 0.42) 58%, rgba(5, 18, 29, 0.9));
+          box-shadow: 0 0 20px rgba(74, 193, 255, 0.22), inset 0 0 18px rgba(123, 220, 255, 0.12);
+        }
+        .terrain-inspector-heading {
+          text-align: center;
+        }
+        .terrain-inspector-heading span {
+          display: block;
+          color: #77cce7;
+          font-size: 0.62rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .terrain-inspector-heading h4 {
+          margin: 3px 0 0;
+          color: #f0fbff;
+          font-size: 1.05rem;
+        }
+        .terrain-integrity {
+          padding: 9px;
+          border: 1px solid rgba(158, 216, 235, 0.14);
+          border-radius: 6px;
+          background: rgba(130, 204, 232, 0.06);
+        }
+        .terrain-integrity-label {
+          display: flex;
+          justify-content: space-between;
+          color: #b9d6df;
+          font-size: 0.7rem;
+          font-weight: 700;
+        }
+        .terrain-integrity-label strong { color: #eafaff; }
+        .terrain-integrity-track {
+          height: 7px;
+          margin-top: 7px;
+          overflow: hidden;
+          border-radius: 4px;
+          background: rgba(3, 10, 16, 0.72);
+        }
+        .terrain-integrity-track span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #65d6ad, #baf1c9);
+          box-shadow: 0 0 9px rgba(122, 232, 183, 0.6);
+          transition: width 260ms ease;
+        }
+        .terrain-rule-list {
+          display: grid;
+          gap: 6px;
+          color: #c7d7df;
+          font-size: 0.72rem;
+          line-height: 1.35;
+        }
+        .terrain-rule-list span {
+          padding: 7px 8px 7px 23px;
+          position: relative;
+          border-left: 2px solid rgba(108, 209, 241, 0.58);
+          background: rgba(255, 255, 255, 0.035);
+        }
+        .terrain-rule-list span::before {
+          content: '•';
+          position: absolute;
+          left: 9px;
+          color: #7cdbf7;
+        }
+        .terrain-description {
+          margin: 0;
+          color: #91aab5;
+          font-size: 0.74rem;
+          font-style: italic;
+          line-height: 1.45;
         }
 
         .inspected-card-preview {

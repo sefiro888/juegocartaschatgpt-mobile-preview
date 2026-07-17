@@ -273,6 +273,29 @@ describe('Rules Engine', () => {
     expect(state.player.graveyard.map((card) => card.id)).toContain('lluvia-ceniza');
   });
 
+  it('should remove terrain cleanly when global damage destroys it', () => {
+    let state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
+    state.player.manaSources.furia.total = 8;
+    state.player.hand.unshift({ ...CARDS_DB['erupcion-volcanica'] });
+    state.board['4,4'] = {
+      id: 'eruption-ridge',
+      cardId: 'obstaculo-risco',
+      controller: 'OPPONENT',
+      position: { x: 4, y: 4 },
+      health: 2,
+      maxHealth: 2,
+      attack: 0,
+      hasMovedThisTurn: true,
+      hasAttackedThisTurn: true,
+      frozenTurns: 0,
+    };
+
+    state = playSpell(state, 'PLAYER', 'erupcion-volcanica');
+
+    expect(state.board['4,4']).toBeUndefined();
+    expect(state.opponent.graveyard.map((card) => card.id)).not.toContain('obstaculo-risco');
+  });
+
   it('should preview the same combat exchange resolved by the engine', () => {
     const state = initializeGame(furyDeck, arcaneDeck, commanderFury, commanderArcane, seed);
     state.board['2,1'] = {

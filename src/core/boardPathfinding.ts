@@ -1,5 +1,6 @@
 import type { BoardEntity, Position } from '../types/card';
 import { isInsideBoard } from './boardConfig';
+import { isObstacleCardId } from './obstacleConfig';
 
 export interface MovementTraversalOptions {
   allowDiagonal?: boolean;
@@ -17,7 +18,7 @@ export function positionKey(position: Position): string {
 }
 
 export function isBoardObstacle(entity: BoardEntity | undefined): boolean {
-  return entity?.cardId.startsWith('obstaculo-') ?? false;
+  return entity ? isObstacleCardId(entity.cardId) : false;
 }
 
 function getNeighborPositions(position: Position, allowDiagonal: boolean): Position[] {

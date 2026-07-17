@@ -926,22 +926,13 @@ export function playSpell(
 
   // Erupción Volcánica: Deal 2 damage to ALL units on the board (not commanders, but actually all units per card text)
   if (card.id === 'erupcion-volcanica') {
-    // Collect all entity keys first, then apply damage
+    // Work from a snapshot: a previous target may remove another entity via a death trigger.
     const entityKeys = Object.keys(nextBoard);
     for (const key of entityKeys) {
-      if (!nextBoard[key]) continue; // May have been removed by chain deaths
+      if (!nextBoard[key]) continue;
       const ent = nextBoard[key];
-      // Deal damage to all units (including commanders and structures per card text: "todas las unidades en el tablero")
-      if (ent.id === 'commander-player' || ent.id === 'commander-opponent') continue; // Skip commanders for balance
-      ent.health -= 2;
-      if (ent.health <= 0) {
-        const savedCardId = ent.cardId;
-        const savedPos = { ...ent.position };
-        const w = resolveEntityDeath(nextBoard, key, ent, pState1, pState2);
-        if (w) winner = w;
-        const wt = resolveDeathTrigger(nextBoard, savedCardId, savedPos, pState1, pState2);
-        if (wt) winner = wt;
-      }
+      if (ent.id === 'commander-player' || ent.id === 'commander-opponent') continue;
+      dealDamageAtKey(key, 2);
     }
   }
 

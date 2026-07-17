@@ -4,6 +4,12 @@ import { initializeGame, playManaCard, summonUnit, moveUnit, combatAttack, playS
 import { getPreconstructedDeck, CARDS_DB } from '../core/cardsDb';
 import { executeAITurn, type AIActionStep } from '../core/ai';
 import { audioService } from '../core/audio';
+import { getObstacleDefinition } from '../core/obstacleConfig';
+import { isBoardObstacle } from '../core/boardPathfinding';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { createOnlineMatch, getOnlineMatch, joinOnlineMatch, saveOnlineMatchState, subscribeToOnlineMatch, unsubscribeFromOnlineMatch } from '../online/matchService';
+import { getOnlinePlayerId, isSupabaseConfigured } from '../online/supabaseClient';
+import type { OnlineMatchRecord, OnlineSession } from '../online/types';
 
 export interface GameEvent {
   id: number;
@@ -15,6 +21,8 @@ export interface GameEvent {
 let gameEventId = 0;
 let presentationActionId = 0;
 let aiTurnToken = 0;
+let onlineChannel: RealtimeChannel | null = null;
+let onlineSyncTimer: ReturnType<typeof setInterval> | null = null;
 
 const initialSoundEnabled = typeof window !== 'undefined'
   && window.localStorage.getItem('nexo-sound-enabled') === 'true';
@@ -26,6 +34,75 @@ function createGameEvent(text: string, tone: GameEvent['tone']): GameEvent {
 
 function appendGameEvent(events: GameEvent[], text: string, tone: GameEvent['tone']): GameEvent[] {
   return [...events.slice(-7), createGameEvent(text, tone)];
+}
+
+function getBoardEntityName(entity: BoardEntity | undefined): string {
+  if (!entity) return 'su objetivo';
+  if (isBoardObstacle(entity)) return getObstacleDefinition(entity.cardId).name;
+  return CARDS_DB[entity.cardId]?.name ?? 'Unidad';
+}
+
+function createOnlineGameState(playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string): GameState {
+  const playerDeck = getPreconstructedDeck(deckTheme || playerFaction);
+  const opponentFaction = playerFaction === 'FURIA' ? 'ARCANO' : 'FURIA';
+  const opponentDeck = getPreconstructedDeck(opponentFaction);
+  const playerCommander = playerFaction === 'FURIA' ? CARDS_DB['comandante-furia'] : CARDS_DB['comandante-arcano'];
+  const opponentCommander = opponentFaction === 'FURIA' ? CARDS_DB['comandante-furia'] : CARDS_DB['comandante-arcano'];
+  return initializeGame(playerDeck, opponentDeck, playerCommander, opponentCommander, `online-game-${Date.now()}`);
+}
+
+function toOnlineSession(match: OnlineMatchRecord, role: 'host' | 'guest'): OnlineSession {
+  return {
+    matchId: match.id,
+    roomCode: match.room_code,
+    role,
+    localController: role === 'host' ? 'PLAYER' : 'OPPONENT',
+    revision: match.revision,
+    status: match.status,
+  };
+}
+
+function applyOnlineMatch(match: OnlineMatchRecord) {
+  const session = useGameStore.getState().onlineSession;
+  if (!session || session.matchId !== match.id || match.revision < session.revision) return;
+  useGameStore.setState({
+    gameState: match.game_state,
+    onlineSession: { ...session, revision: match.revision, status: match.status },
+    selectedCardInHand: null,
+    selectedEntity: null,
+    hoveredEntity: null,
+    isOnlineLoading: false,
+    onlineError: null,
+  });
+}
+
+function stopOnlineSync() {
+  if (onlineSyncTimer) window.clearInterval(onlineSyncTimer);
+  onlineSyncTimer = null;
+}
+
+function startOnlineSync(match: OnlineMatchRecord) {
+  stopOnlineSync();
+  onlineChannel = subscribeToOnlineMatch(match.id, applyOnlineMatch);
+  onlineSyncTimer = window.setInterval(() => {
+    void getOnlineMatch(match.room_code)
+      .then((updatedMatch) => {
+        if (updatedMatch) applyOnlineMatch(updatedMatch);
+      })
+      .catch(() => undefined);
+  }, 1200);
+}
+
+async function synchronizeOnlineState(gameState: GameState) {
+  const session = useGameStore.getState().onlineSession;
+  if (!session) return;
+  try {
+    applyOnlineMatch(await saveOnlineMatchState(session.matchId, session.revision, gameState));
+  } catch (error) {
+    useGameStore.setState({
+      onlineError: error instanceof Error ? error.message : 'No se pudo sincronizar la partida.',
+    });
+  }
 }
 
 export interface PresentationAction extends Omit<AIActionStep, 'state'> {
@@ -78,9 +155,16 @@ interface GameStore {
   isAIThinking: boolean;
   soundEnabled: boolean;
   presentationAction: PresentationAction | null;
+  localController: 'PLAYER' | 'OPPONENT';
+  onlineSession: OnlineSession | null;
+  onlineError: string | null;
+  isOnlineLoading: boolean;
   
   // Game Actions
   startNewGame: (playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string) => void;
+  createOnlineGame: (playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string) => Promise<string>;
+  joinOnlineGame: (roomCode: string) => Promise<void>;
+  leaveOnlineGame: () => Promise<void>;
   selectCardInHand: (card: Card | null) => void;
   selectEntity: (entity: BoardEntity | null) => void;
   setHoveredEntity: (entity: BoardEntity | null) => void;
@@ -106,9 +190,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isAIThinking: false,
   soundEnabled: initialSoundEnabled,
   presentationAction: null,
+  localController: 'PLAYER',
+  onlineSession: null,
+  onlineError: null,
+  isOnlineLoading: false,
 
   startNewGame: (playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string) => {
     aiTurnToken++;
+    stopOnlineSync();
+    void unsubscribeFromOnlineMatch(onlineChannel);
+    onlineChannel = null;
     const playerDeck = getPreconstructedDeck(deckTheme || playerFaction);
     const opponentFaction = playerFaction === 'FURIA' ? 'ARCANO' : 'FURIA';
     
@@ -135,7 +226,88 @@ export const useGameStore = create<GameStore>((set, get) => ({
       activeFaction: playerFaction,
       isAIThinking: false,
       presentationAction: null,
+      localController: 'PLAYER',
+      onlineSession: null,
+      onlineError: null,
+      isOnlineLoading: false,
     });
+  },
+
+  createOnlineGame: async (playerFaction, deckTheme) => {
+    if (!isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
+    aiTurnToken++;
+    set({ isOnlineLoading: true, onlineError: null });
+    try {
+      const playerId = await getOnlinePlayerId();
+      const gameState = createOnlineGameState(playerFaction, deckTheme);
+      const match = await createOnlineMatch(playerId, gameState);
+      await unsubscribeFromOnlineMatch(onlineChannel);
+      set({
+        gameState,
+        selectedCardInHand: null,
+        selectedEntity: null,
+        hoveredEntity: null,
+        inspectedCard: null,
+        gameEvents: [createGameEvent('Sala creada. Comparte el enlace con tu rival.', 'system')],
+        activeFaction: playerFaction,
+        isAIThinking: false,
+        presentationAction: null,
+        localController: 'PLAYER',
+        onlineSession: toOnlineSession(match, 'host'),
+        onlineError: null,
+        isOnlineLoading: false,
+      });
+      startOnlineSync(match);
+      return match.room_code;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo crear la sala online.';
+      set({ isOnlineLoading: false, onlineError: message });
+      throw new Error(message);
+    }
+  },
+
+  joinOnlineGame: async (roomCode) => {
+    if (!isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
+    aiTurnToken++;
+    set({ isOnlineLoading: true, onlineError: null });
+    try {
+      const playerId = await getOnlinePlayerId();
+      const foundMatch = await getOnlineMatch(roomCode);
+      if (!foundMatch) throw new Error('No existe una sala con ese codigo.');
+      const role = foundMatch.host_id === playerId ? 'host' : 'guest';
+      const match = role === 'guest' && foundMatch.guest_id !== playerId
+        ? await joinOnlineMatch(foundMatch, playerId)
+        : foundMatch;
+
+      await unsubscribeFromOnlineMatch(onlineChannel);
+      set({
+        gameState: match.game_state,
+        selectedCardInHand: null,
+        selectedEntity: null,
+        hoveredEntity: null,
+        inspectedCard: null,
+        gameEvents: [createGameEvent(role === 'host' ? 'Sala recuperada.' : 'Te has unido a la sala.', 'system')],
+        activeFaction: role === 'host' ? 'FURIA' : 'ARCANO',
+        isAIThinking: false,
+        presentationAction: null,
+        localController: role === 'host' ? 'PLAYER' : 'OPPONENT',
+        onlineSession: toOnlineSession(match, role),
+        onlineError: null,
+        isOnlineLoading: false,
+      });
+      startOnlineSync(match);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo unir a la sala.';
+      set({ isOnlineLoading: false, onlineError: message });
+      throw new Error(message);
+    }
+  },
+
+  leaveOnlineGame: async () => {
+    stopOnlineSync();
+    await unsubscribeFromOnlineMatch(onlineChannel);
+    onlineChannel = null;
+    set({ onlineSession: null, onlineError: null, isOnlineLoading: false, localController: 'PLAYER' });
   },
 
   selectCardInHand: (card) => {
@@ -164,36 +336,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   playMana: (cardId) => {
-    const { gameState, isAIThinking } = get();
-    if (!gameState || gameState.activePlayer !== 'PLAYER' || isAIThinking) return;
+    const { gameState, isAIThinking, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
 
     audioService.playHover();
     const card = CARDS_DB[cardId];
-    const nextState = playManaCard(gameState, 'PLAYER', cardId);
+    const nextState = playManaCard(gameState, localController, cardId);
     set((state) => ({
       gameState: nextState,
       selectedCardInHand: null,
       gameEvents: appendGameEvent(state.gameEvents, `Fuente activada: ${card?.name ?? 'Maná'}.`, 'mana'),
     }));
+    if (onlineSession) void synchronizeOnlineState(nextState);
   },
 
   summon: (cardId, pos, battlecryTarget) => {
-    const { gameState, isAIThinking } = get();
-    if (!gameState || gameState.activePlayer !== 'PLAYER' || isAIThinking) return;
+    const { gameState, isAIThinking, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
 
     audioService.playSummonSlam();
     const card = CARDS_DB[cardId];
-    const nextState = summonUnit(gameState, 'PLAYER', cardId, pos, battlecryTarget);
+    const nextState = summonUnit(gameState, localController, cardId, pos, battlecryTarget);
     set((state) => ({
       gameState: nextState,
       selectedCardInHand: null,
       gameEvents: appendGameEvent(state.gameEvents, `${card?.name ?? 'Unidad'} entra en el santuario.`, 'summon'),
     }));
+    if (onlineSession) void synchronizeOnlineState(nextState);
   },
 
   move: (from, to) => {
-    const { gameState, isAIThinking } = get();
-    if (!gameState || gameState.activePlayer !== 'PLAYER' || isAIThinking) return;
+    const { gameState, isAIThinking, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
 
     audioService.playHover();
     const movedEntity = gameState.board[`${from.x},${from.y}`];
@@ -207,30 +381,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
         'move',
       ),
     }));
+    if (onlineSession) void synchronizeOnlineState(nextState);
   },
 
   attack: (attackerPos, targetPos) => {
-    const { gameState, isAIThinking } = get();
-    if (!gameState || gameState.activePlayer !== 'PLAYER' || isAIThinking) return;
+    const { gameState, isAIThinking, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
 
     audioService.playClash();
     const attacker = gameState.board[`${attackerPos.x},${attackerPos.y}`];
     const target = gameState.board[`${targetPos.x},${targetPos.y}`];
     const nextState = combatAttack(gameState, attackerPos, targetPos);
+    const targetKey = `${targetPos.x},${targetPos.y}`;
+    const terrainDestroyed = Boolean(target && isBoardObstacle(target) && !nextState.board[targetKey]);
+    const attackLog = terrainDestroyed
+      ? `${getBoardEntityName(attacker)} derriba ${getBoardEntityName(target)}.`
+      : `${getBoardEntityName(attacker)} ataca a ${getBoardEntityName(target)}.`;
     set((state) => ({
       gameState: nextState,
       selectedEntity: null,
       gameEvents: appendGameEvent(
         state.gameEvents,
-        `${attacker ? CARDS_DB[attacker.cardId]?.name : 'Unidad'} ataca a ${target ? CARDS_DB[target.cardId]?.name : 'su objetivo'}.`,
+        attackLog,
         'attack',
       ),
     }));
+    if (onlineSession) void synchronizeOnlineState(nextState);
   },
 
   castSpell: (cardId, targetPos) => {
-    const { gameState, isAIThinking } = get();
-    if (!gameState || gameState.activePlayer !== 'PLAYER' || isAIThinking) return;
+    const { gameState, isAIThinking, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
 
     // Check if the spell is ice/freeze themed
     if (cardId.includes('congelacion') || cardId.includes('prision') || cardId.includes('tormenta') || cardId.includes('escarcha')) {
@@ -239,23 +420,43 @@ export const useGameStore = create<GameStore>((set, get) => ({
       audioService.playClash();
     }
     const card = CARDS_DB[cardId];
-    const nextState = playSpell(gameState, 'PLAYER', cardId, targetPos);
+    const targetKey = `${targetPos.x},${targetPos.y}`;
+    const target = gameState.board[targetKey];
+    const nextState = playSpell(gameState, localController, cardId, targetPos);
+    const terrainDestroyed = Boolean(target && isBoardObstacle(target) && !nextState.board[targetKey]);
+    const spellLog = terrainDestroyed
+      ? `${card?.name ?? 'Hechizo'} derriba ${getBoardEntityName(target)}.`
+      : target && isBoardObstacle(target)
+        ? `${card?.name ?? 'Hechizo'} impacta ${getBoardEntityName(target)}.`
+        : `${card?.name ?? 'Hechizo'} libera su efecto.`;
     set((state) => ({
       gameState: nextState,
       selectedCardInHand: null,
-      gameEvents: appendGameEvent(state.gameEvents, `${card?.name ?? 'Hechizo'} libera su efecto.`, 'spell'),
+      gameEvents: appendGameEvent(state.gameEvents, spellLog, 'spell'),
     }));
+    if (onlineSession) void synchronizeOnlineState(nextState);
   },
 
   endActiveTurn: () => {
-    const { gameState, isAIThinking } = get();
-    if (!gameState || gameState.activePlayer !== 'PLAYER' || isAIThinking) return;
+    const { gameState, isAIThinking, localController, onlineSession } = get();
+    if (!gameState || gameState.activePlayer !== localController || isAIThinking) return;
 
     // Play chime sound
     audioService.playTurnChange();
     
     // End player's turn
     const nextState = endTurn(gameState);
+
+    if (onlineSession) {
+      set((state) => ({
+        gameState: nextState,
+        selectedCardInHand: null,
+        selectedEntity: null,
+        gameEvents: appendGameEvent(state.gameEvents, 'Turno entregado a tu rival.', 'system'),
+      }));
+      void synchronizeOnlineState(nextState);
+      return;
+    }
 
     // Check if end-of-turn triggers already decided the game
     if (nextState.winner) {

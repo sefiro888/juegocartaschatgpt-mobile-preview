@@ -538,6 +538,7 @@ const EmberSeal: React.FC = () => (
 interface SanctuaryObstacleProps {
   entity: BoardEntity;
   onClick: () => void;
+  onHover?: (isHovered: boolean) => void;
   isCollapsing?: boolean;
   onCollapseComplete?: () => void;
 }
@@ -545,6 +546,7 @@ interface SanctuaryObstacleProps {
 export const SanctuaryObstacle: React.FC<SanctuaryObstacleProps> = ({
   entity,
   onClick,
+  onHover,
   isCollapsing = false,
   onCollapseComplete,
 }) => {
@@ -603,10 +605,13 @@ export const SanctuaryObstacle: React.FC<SanctuaryObstacleProps> = ({
         onClick();
       }}
       onPointerEnter={() => {
-        if (!isCollapsing) document.body.style.cursor = 'pointer';
+        if (isCollapsing) return;
+        document.body.style.cursor = 'pointer';
+        onHover?.(true);
       }}
       onPointerLeave={() => {
         document.body.style.cursor = 'default';
+        onHover?.(false);
       }}
     >
       {isRidge ? (

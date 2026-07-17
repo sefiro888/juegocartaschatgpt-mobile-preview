@@ -11,7 +11,8 @@ import { SanctuaryMaterialsProvider, useSanctuaryMaterials } from './SanctuaryMa
 import type { BoardEntity, Position } from '../../types/card';
 import { canAttackTarget, canSpellTargetObstacle, getCombatPreview, isAdjacent } from '../../core/engine';
 import { CARDS_DB } from '../../core/cardsDb';
-import { PLAYER_BACK_ROW } from '../../core/boardConfig';
+import { OPPONENT_BACK_ROW, PLAYER_BACK_ROW } from '../../core/boardConfig';
+import { getObstacleDefinition } from '../../core/obstacleConfig';
 import {
   BOARD_CELL_SIZE,
   BOARD_SURFACE_Y,
@@ -477,12 +478,16 @@ const TacticalPreviewPanel: React.FC<TacticalPreviewPanelProps> = ({
   </aside>
 );
 
-function isEntityVisible(entity: BoardEntity, board: Record<string, BoardEntity>): boolean {
-  if (entity.controller === 'PLAYER' || entity.cardId.startsWith('obstaculo-')) return true;
+function isEntityVisible(
+  entity: BoardEntity,
+  board: Record<string, BoardEntity>,
+  localController: 'PLAYER' | 'OPPONENT',
+): boolean {
+  if (entity.controller === localController || entity.cardId.startsWith('obstaculo-')) return true;
   if (entity.position.y <= 2) return true;
 
   return Object.values(board)
-    .filter((candidate) => candidate.controller === 'PLAYER')
+    .filter((candidate) => candidate.controller === localController)
     .some((playerEntity) => {
       const deltaX = Math.abs(playerEntity.position.x - entity.position.x);
       const deltaY = Math.abs(playerEntity.position.y - entity.position.y);
@@ -522,6 +527,7 @@ export const Board3D: React.FC = () => {
     selectedEntity,
     hoveredEntity,
     presentationAction,
+    localController,
     selectEntity,
     setHoveredEntity,
     summon,
@@ -677,7 +683,9 @@ export const Board3D: React.FC = () => {
           || (!isBoardObstacle(occupant) && !CARDS_DB[occupant.cardId]?.rulesText.includes('Inmune a Hechizos'))
         )) {
           if (selectedCardInHand.id === 'destello-runico') {
-            const commander = Object.values(gameState.board).find((entity) => entity.id === 'commander-player');
+            const commander = Object.values(gameState.board).find(
+              (entity) => entity.id === (localController === 'PLAYER' ? 'commander-player' : 'commander-opponent'),
+            );
             if (commander && isAdjacent(commander.position, node.logicalPosition, false)) highlight = 'spell';
           } else {
             highlight = 'spell';
@@ -685,9 +693,9 @@ export const Board3D: React.FC = () => {
         }
       } else if (selectedCardInHand && (selectedCardInHand.type === 'UNIDAD' || selectedCardInHand.type === 'ESTRUCTURA')) {
         if (!occupant) {
-          const isBackRow = y === PLAYER_BACK_ROW;
+          const isBackRow = y === (localController === 'PLAYER' ? PLAYER_BACK_ROW : OPPONENT_BACK_ROW);
           const hasAdjacentAlly = Object.values(gameState.board).some(
-            (entity) => entity.controller === 'PLAYER' && isAdjacent(entity.position, node.logicalPosition, false),
+            (entity) => entity.controller === localController && isAdjacent(entity.position, node.logicalPosition, false),
           );
           if (isBackRow || hasAdjacentAlly) highlight = 'summon';
         }
@@ -698,7 +706,7 @@ export const Board3D: React.FC = () => {
           if (!occupant && movementRoutesByKey.has(key)) {
             highlight = 'move';
           } else if (
-            (occupant?.controller === 'OPPONENT' || isBoardObstacle(occupant)) &&
+            (occupant?.controller !== localController || isBoardObstacle(occupant)) &&
             canAttackTarget(gameState, selectedEntity.position, node.logicalPosition) &&
             !selectedEntity.hasAttackedThisTurn &&
             CARDS_DB[selectedEntity.cardId]?.type !== 'ESTRUCTURA'
@@ -712,7 +720,7 @@ export const Board3D: React.FC = () => {
     }
 
     return highlights;
-  }, [gameState, movementRoutesByKey, selectedCardInHand, selectedEntity]);
+  }, [gameState, localController, movementRoutesByKey, selectedCardInHand, selectedEntity]);
 
   if (!gameState) return null;
 
@@ -733,7 +741,7 @@ export const Board3D: React.FC = () => {
       let battlecryTarget: Position | undefined;
       if (selectedCardInHand.id === 'tejedora-escarcha') {
         battlecryTarget = Object.values(gameState.board).find(
-          (entity) => entity.controller === 'OPPONENT' && !isBoardObstacle(entity),
+          (entity) => entity.controller !== localController && !isBoardObstacle(entity),
         )?.position;
       }
       summon(selectedCardInHand.id, position, battlecryTarget);
@@ -764,7 +772,7 @@ export const Board3D: React.FC = () => {
         ]);
       }
       attack(selectedEntity.position, position);
-    } else if (occupant?.controller === 'PLAYER') {
+    } else if (occupant?.controller === localController) {
       selectEntity(selectedEntity?.id === occupant.id ? null : occupant);
     } else {
       selectEntity(null);
@@ -810,6 +818,23 @@ export const Board3D: React.FC = () => {
     if (highlight === 'attack') {
       const preview = getCombatPreview(gameState, selectedEntity.position, node.logicalPosition);
       if (!preview) return null;
+      const target = gameState.board[positionKey(node.logicalPosition)];
+      if (target && isBoardObstacle(target)) {
+        const obstacle = getObstacleDefinition(target.cardId);
+        const remainingIntegrity = Math.max(0, target.health - preview.damageToTarget);
+        return {
+          title: 'DEMOLICION PREVISTA',
+          detail: `${obstacle.name} - objetivo ${destination}`,
+          tone: 'attack' as const,
+          primaryValue: preview.damageToTarget,
+          primaryLabel: ' dano',
+          secondaryValue: remainingIntegrity,
+          secondaryLabel: ' integridad',
+          warning: preview.targetWillFall
+            ? 'El derrumbe abrira esta casilla para las rutas posteriores.'
+            : `${obstacle.description} Integridad actual: ${target.health}/${target.maxHealth}.`,
+        };
+      }
       const warnings = [
         preview.targetWillFall ? 'El objetivo caerá.' : undefined,
         preview.attackerWillFall ? 'Tu unidad caerá en el intercambio.' : undefined,
@@ -891,7 +916,17 @@ export const Board3D: React.FC = () => {
           {Object.values(gameState.board).map((entity) => {
             if (entity.cardId.startsWith('obstaculo-')) {
               if (!showObstacles) return null;
-              return <SanctuaryObstacle key={entity.id} entity={entity} onClick={() => handleNodeClick(entity.position)} />;
+              return (
+                <SanctuaryObstacle
+                  key={entity.id}
+                  entity={entity}
+                  onClick={() => handleNodeClick(entity.position)}
+                  onHover={(isHovered) => {
+                    setHoveredTacticalNodeId(isHovered ? getBoardVisualNode(entity.position).id : null);
+                    setHoveredEntity(isHovered ? entity : null);
+                  }}
+                />
+              );
             }
 
             const attackAnimation = attackAnimations.find((animation) => animation.attackerId === entity.id);
@@ -904,7 +939,7 @@ export const Board3D: React.FC = () => {
                 visualNode={getBoardVisualNode(entity.position)}
                 isSelected={selectedEntity?.id === entity.id}
                 isHovered={hoveredEntity?.id === entity.id}
-                isHidden={!isEntityVisible(entity, gameState.board)}
+                isHidden={!isEntityVisible(entity, gameState.board, localController)}
                 movementRoute={movementAnimationRoutes[entity.id]}
                 attackTarget={attackAnimation ? getBoardVisualNode(attackAnimation.to).worldPosition : undefined}
                 attackPulseId={attackAnimation?.id}
