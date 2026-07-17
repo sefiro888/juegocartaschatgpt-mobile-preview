@@ -12,14 +12,14 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
   const [selectedFaction, setSelectedFaction] = useState<Faction | 'ALL'>('ALL');
   const [inspectedCard, setInspectedCard] = useState<Card | null>(null);
 
-  const factions: { id: Faction | 'ALL'; name: string; locked?: boolean }[] = [
+  const factions: { id: Faction | 'ALL'; name: string }[] = [
     { id: 'ALL', name: 'Todas' },
     { id: 'FURIA', name: 'Furia (Fuego)' },
     { id: 'ARCANO', name: 'Arcano (Hielo)' },
-    { id: 'NATURALEZA', name: 'Naturaleza', locked: true },
-    { id: 'ORDEN', name: 'Orden', locked: true },
-    { id: 'SOMBRA', name: 'Sombra', locked: true },
-    { id: 'VACIO', name: 'Vacío', locked: true },
+    { id: 'NATURALEZA', name: 'Naturaleza' },
+    { id: 'ORDEN', name: 'Orden' },
+    { id: 'SOMBRA', name: 'Sombra' },
+    { id: 'VACIO', name: 'Vacío' },
   ];
 
   const cardsList = Object.values(CARDS_DB).sort((a, b) => a.cardNumber - b.cardNumber);
@@ -46,11 +46,10 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
         {factions.map(f => (
           <button
             key={f.id}
-            disabled={f.locked}
-            className={`tab-button ${selectedFaction === f.id ? 'active' : ''} ${f.locked ? 'locked' : ''}`}
-            onClick={() => !f.locked && setSelectedFaction(f.id)}
+            className={`tab-button ${selectedFaction === f.id ? 'active' : ''}`}
+            onClick={() => setSelectedFaction(f.id)}
           >
-            {f.name} {f.locked && '🔒'}
+            {f.name}
           </button>
         ))}
       </div>
@@ -247,11 +246,6 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           color: #fff;
           border-color: #6366f1;
           box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
-        }
-
-        .tab-button.locked {
-          opacity: 0.4;
-          cursor: not-allowed;
         }
 
         /* Grid */
