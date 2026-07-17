@@ -3,6 +3,7 @@ name: Deploy game to GitHub Pages
 on:
   push:
     branches:
+      - main
       - feat/floating-sanctuary-card-movement
   workflow_dispatch:
 

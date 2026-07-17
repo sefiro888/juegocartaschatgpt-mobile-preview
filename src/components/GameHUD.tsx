@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { CardDOM } from './CardDOM';
 import { CARDS_DB } from '../core/cardsDb';
 import type { BoardEntity } from '../types/card';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Info, Maximize2, Volume2, VolumeX, X } from 'lucide-react';
 import { getObstacleDefinition } from '../core/obstacleConfig';
 import { isBoardObstacle } from '../core/boardPathfinding';
 
@@ -74,6 +74,7 @@ interface GameHUDProps {
 
 export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const [boardRecoveryVersion, setBoardRecoveryVersion] = useState(0);
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const stateRecoveryAttempted = useRef(false);
   const {
     gameState,
@@ -123,7 +124,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     const roomCode = new URLSearchParams(window.location.search).get('sala')?.trim().toUpperCase();
     if (!roomCode || roomCode.length !== 6) return;
     stateRecoveryAttempted.current = true;
-    void joinOnlineGame(roomCode).catch(() => undefined);
+    void joinOnlineGame(roomCode, 'FURIA').catch(() => undefined);
   }, [gameState, joinOnlineGame]);
 
   useEffect(() => {
@@ -331,11 +332,59 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           </BoardErrorBoundary>
         </div>
 
+        <div className="mobile-action-rail" aria-label="Controles de partida">
+          <button
+            type="button"
+            className={`mobile-control-button ${mobileInspectorOpen ? 'is-active' : ''}`}
+            onClick={() => setMobileInspectorOpen((current) => !current)}
+            aria-label={mobileInspectorOpen ? 'Cerrar inspector' : 'Abrir inspector'}
+          >
+            {mobileInspectorOpen ? <X size={18} /> : <Info size={18} />}
+            <span>Inspector</span>
+          </button>
+          {selectedCardInHand && (
+            <button
+              type="button"
+              className="mobile-control-button"
+              onClick={() => setInspectedCard(selectedCardInHand)}
+              aria-label={`Ampliar ${selectedCardInHand.name}`}
+            >
+              <Maximize2 size={18} />
+              <span>Carta</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={`mobile-control-button ${soundEnabled ? 'is-active' : ''}`}
+            onClick={toggleSound}
+            aria-label={soundEnabled ? 'Desactivar sonido' : 'Activar sonido'}
+          >
+            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            <span>Sonido</span>
+          </button>
+          <button
+            type="button"
+            className={`mobile-control-button mobile-end-turn ${isPlayerTurn ? 'is-active' : ''}`}
+            disabled={!isPlayerTurn}
+            onClick={handleEndTurn}
+          >
+            <span>{isPlayerTurn ? 'Fin turno' : 'Espera'}</span>
+          </button>
+        </div>
+
         {/* SIDEBAR DETAILED INSPECTOR */}
-        <div className={`hud-sidebar glass-panel ${hoveredEntity || selectedEntity || selectedCardInHand ? 'has-inspection' : ''}`}>
+        <div className={`hud-sidebar glass-panel ${hoveredEntity || selectedEntity || selectedCardInHand ? 'has-inspection' : ''} ${mobileInspectorOpen ? 'mobile-open' : ''}`}>
           <h3 className="sidebar-title">
             <span className="sidebar-title-icon">🔍</span>
             Inspector
+            <button
+              type="button"
+              className="mobile-inspector-close"
+              onClick={() => setMobileInspectorOpen(false)}
+              aria-label="Cerrar inspector"
+            >
+              <X size={17} />
+            </button>
           </h3>
           
           <div className="inspector-content">
@@ -571,9 +620,14 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
         {/* HAND ROW (CENTER - FULL HEIGHT) */}
         <div className="player-hand-container">
-          <div className="hand-stage-meta" aria-hidden="true">
+          <div className="hand-stage-meta">
             <span className="hand-stage-title">MANO</span>
             <span className="hand-stage-count">{player.hand.length} CARTAS</span>
+            <div className="mobile-player-summary" aria-label="Resumen de recursos">
+              <span className="mobile-health-summary">♥ {playerHealth}/25</span>
+              <span className="mobile-mana-summary arcano-text">❄ {playerArcanoAvail}/{player.manaSources.arcano.total}</span>
+              <span className="mobile-mana-summary furia-text">● {playerFuriaAvail}/{player.manaSources.furia.total}</span>
+            </div>
           </div>
           <div className="player-hand-scroll">
             {player.hand.map((card, idx) => {
@@ -591,19 +645,24 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
               );
 
               return (
-                <div
+                <button
+                  type="button"
                   key={`${card.id}-${idx}`}
                   className={`hand-card-wrapper ${isSelected ? 'is-selected' : ''} ${isPlayable ? 'is-playable' : ''}`}
                   style={{
                     '--hand-rotation': `${(idx - (player.hand.length - 1) / 2) * 1.1}deg`,
                     '--hand-offset': `${Math.abs(idx - (player.hand.length - 1) / 2) * 2}px`,
                   } as React.CSSProperties}
-                  onClick={() => selectCardInHand(isSelected ? null : card)}
+                  onClick={() => {
+                    selectCardInHand(isSelected ? null : card);
+                    setMobileInspectorOpen(!isSelected);
+                  }}
                   onDoubleClick={() => setInspectedCard(card)}
+                  aria-label={`${isSelected ? 'Deseleccionar' : 'Seleccionar'} ${card.name}`}
                   title="Doble clic para ver la carta completa"
                 >
                   <CardDOM card={card} mode="hand" isSelected={isSelected} isPlayable={isPlayable} />
-                </div>
+                </button>
               );
             })}
           </div>
@@ -1699,6 +1758,12 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
         }
 
         .hand-card-wrapper {
+          appearance: none;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          color: inherit;
+          font: inherit;
           flex-shrink: 0;
           transform: translateY(var(--hand-offset)) rotate(var(--hand-rotation));
           transform-origin: center bottom;
@@ -1996,16 +2061,29 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           animation: fadeIn 0.2s ease-out;
         }
 
-        @media (max-width: 900px) {
+        .mobile-action-rail,
+        .mobile-inspector-close,
+        .mobile-player-summary {
+          display: none;
+        }
+
+        @media (max-width: 1100px) {
           .game-hud {
-            padding: 4px;
-            gap: 4px;
+            --mobile-hand-height: 220px;
+            height: 100dvh;
+            padding: 0;
+            gap: 0;
           }
 
           .hud-top-bar {
-            height: 46px;
-            min-height: 46px;
-            padding: 5px 9px;
+            height: 48px;
+            min-height: 48px;
+            padding:
+              calc(5px + env(safe-area-inset-top))
+              max(10px, env(safe-area-inset-right))
+              7px
+              max(10px, env(safe-area-inset-left));
+            background: linear-gradient(180deg, rgba(4, 9, 15, 0.96), rgba(4, 9, 15, 0.72));
           }
 
           .opponent-info-compact .resource-badge,
@@ -2014,75 +2092,218 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           }
 
           .game-center-board {
-            position: relative;
-            gap: 0;
+            position: absolute;
+            inset: 48px 0 var(--mobile-hand-height);
           }
 
           .board-canvas-area {
             width: 100%;
+            height: 100%;
+          }
+
+          .mobile-action-rail {
+            position: fixed;
+            z-index: 38;
+            top: calc(56px + env(safe-area-inset-top));
+            right: max(8px, env(safe-area-inset-right));
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+          }
+
+          .mobile-control-button {
+            width: 58px;
+            min-height: 52px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 5px;
+            border: 1px solid rgba(168, 216, 239, 0.23);
+            border-radius: 8px;
+            color: #bad3df;
+            background: rgba(5, 14, 23, 0.86);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(10px);
+            font: 700 0.58rem var(--font-sans);
+          }
+
+          .mobile-control-button.is-active {
+            border-color: rgba(116, 215, 255, 0.58);
+            color: #e2f9ff;
+            background: rgba(23, 89, 118, 0.88);
+          }
+
+          .mobile-control-button:disabled {
+            opacity: 0.45;
+          }
+
+          .mobile-end-turn.is-active {
+            border-color: rgba(100, 236, 181, 0.55);
+            color: #ecfff7;
+            background: rgba(11, 129, 91, 0.92);
           }
 
           .hud-sidebar {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            bottom: auto;
-            z-index: 20;
-            width: 142px;
+            position: fixed;
+            z-index: 45;
+            top: auto;
+            right: max(8px, env(safe-area-inset-right));
+            bottom: calc(var(--mobile-hand-height) + 8px);
+            left: max(8px, env(safe-area-inset-left));
+            width: auto;
             min-width: 0;
-            padding: 0;
-            border: 0;
-            background: transparent;
-            box-shadow: none;
+            max-height: min(52dvh, 430px);
+            display: none;
+            padding: 12px;
+            border: 1px solid rgba(176, 222, 242, 0.24);
+            border-radius: 12px;
+            background: rgba(5, 13, 22, 0.96);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(18px);
           }
 
-          .hud-sidebar .sidebar-title,
-          .hud-sidebar .inspector-content,
+          .hud-sidebar.mobile-open {
+            display: flex;
+          }
+
+          .hud-sidebar .sidebar-title {
+            display: flex;
+          }
+
+          .mobile-inspector-close {
+            width: 36px;
+            height: 36px;
+            min-height: 36px;
+            margin-left: auto;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            color: #dcecf4;
+            background: rgba(255, 255, 255, 0.06);
+          }
+
+          .hud-sidebar.mobile-open .mobile-inspector-close {
+            display: grid;
+          }
+
+          .hud-sidebar .inspector-content {
+            display: flex;
+          }
+
           .hud-sidebar .action-log {
-            display: none;
+            display: block;
+            flex-basis: 60px;
+            min-height: 60px;
+            max-height: 60px;
           }
 
           .sidebar-footer-controls {
-            width: 142px;
-            margin: 0;
-            padding: 5px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 7px;
-            background: rgba(5, 9, 16, 0.76);
-            backdrop-filter: blur(8px);
+            display: none;
           }
 
-          .sidebar-footer-controls .action-btn {
-            padding: 7px 5px;
-            font-size: 0.68rem;
+          .inspected-card-preview,
+          .hand-card-preview {
+            height: 176px;
+          }
+
+          .inspected-card-preview .mode-hand,
+          .hand-card-preview .mode-hand {
+            width: 120px;
+            height: 172px;
           }
 
           .hud-bottom-bar {
-            grid-template-columns: 108px minmax(0, 1fr) 86px;
-            height: 188px;
-            min-height: 188px;
-            gap: 6px;
-            padding: 7px;
+            grid-template-columns: minmax(0, 1fr);
+            height: var(--mobile-hand-height);
+            min-height: var(--mobile-hand-height);
+            gap: 0;
+            padding:
+              8px
+              max(8px, env(safe-area-inset-right))
+              calc(8px + env(safe-area-inset-bottom))
+              max(8px, env(safe-area-inset-left));
+            border-radius: 12px 12px 0 0;
+          }
+
+          .player-stats-panel,
+          .player-mana-panel {
+            display: none;
+          }
+
+          .player-hand-container {
+            padding: 7px 8px 5px;
+            border-radius: 10px;
+          }
+
+          .hand-stage-meta {
+            min-height: 26px;
+            gap: 7px;
+            padding-inline: 4px;
+          }
+
+          .mobile-player-summary {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: auto;
+          }
+
+          .mobile-player-summary span {
+            padding: 3px 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.24);
+            font-size: 0.62rem;
+            font-weight: 800;
+            white-space: nowrap;
+          }
+
+          .mobile-health-summary {
+            color: #8cf0c4;
           }
 
           .player-hand-scroll {
             justify-content: flex-start;
-            padding-inline: 4px;
+            gap: 12px;
+            padding: 2px 4px 5px;
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x proximity;
           }
 
           .player-hand-scroll .mode-hand {
-            width: 116px;
-            height: 166px;
+            width: 132px;
+            height: 189px;
+          }
+
+          .hand-card-wrapper {
+            scroll-snap-align: center;
+            transform: none;
+          }
+
+          .hand-card-wrapper:hover {
+            transform: none;
+          }
+
+          .hand-card-wrapper.is-selected {
+            transform: translateY(-8px) scale(1.02);
           }
 
           .card-inspection-overlay {
-            padding: 16px;
+            align-items: flex-start;
+            padding:
+              calc(12px + env(safe-area-inset-top))
+              12px
+              calc(12px + env(safe-area-inset-bottom));
           }
 
           .card-inspection-modal {
             grid-template-columns: minmax(180px, 230px) minmax(0, 1fr);
             gap: 20px;
-            padding: 24px;
+            width: 100%;
+            max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            padding: 48px 24px 24px;
           }
 
           .card-inspection-art .mode-inspected {
@@ -2093,63 +2314,96 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           .card-inspection-section p {
             font-size: 0.84rem;
           }
+
+          .game-over-box {
+            width: min(440px, calc(100vw - 24px));
+            padding: 36px 24px;
+          }
         }
 
-        @media (max-width: 540px) {
-          .commander-tag {
-            font-size: 0.66rem;
+        @media (max-width: 600px) {
+          .game-hud {
+            --mobile-hand-height: 238px;
+          }
+
+          .hud-top-bar {
+            padding-inline: 8px;
+          }
+
+          .opponent-info-compact {
+            gap: 5px;
+          }
+
+          .opponent-info-compact .commander-tag {
+            display: none;
           }
 
           .nexo-health-bar-mini {
-            width: 82px;
+            width: 96px;
           }
+
+          .turn-label { font-size: 0.72rem; }
 
           .phase-tag {
             font-size: 0.57rem;
             padding-inline: 5px;
           }
 
-          .hud-bottom-bar {
-            grid-template-columns: 74px minmax(0, 1fr) 64px;
-            height: 176px;
-            min-height: 176px;
-            gap: 4px;
-            padding: 5px;
+          .mobile-action-rail {
+            top: calc(54px + env(safe-area-inset-top));
+            flex-direction: row;
           }
 
-          .player-stats-panel,
-          .player-mana-panel {
-            gap: 5px;
+          .mobile-control-button {
+            width: 46px;
+            min-height: 42px;
+            height: 42px;
+            padding: 4px;
           }
 
-          .player-stats-panel .commander-tag {
-            font-size: 0.58rem;
-          }
-
-          .deck-graveyard-stats,
-          .mana-orb-icon,
-          .mana-orb-count {
-            font-size: 0.6rem;
-          }
-
-          .mana-orb {
-            width: 7px;
-            height: 7px;
-          }
-
-          .action-btn.surrender {
+          .mobile-control-button span {
             display: none;
+          }
+
+          .mobile-end-turn {
+            width: 68px;
+          }
+
+          .mobile-end-turn span {
+            display: inline;
+          }
+
+          .hand-stage-title {
+            display: none;
+          }
+
+          .hand-stage-count {
+            margin-right: auto;
+          }
+
+          .mobile-player-summary {
+            gap: 3px;
+          }
+
+          .mobile-player-summary span {
+            padding-inline: 4px;
+            font-size: 0.57rem;
+          }
+
+          .player-hand-scroll .mode-hand {
+            width: 132px;
+            height: 189px;
           }
 
           .card-inspection-modal {
             grid-template-columns: 1fr;
             gap: 14px;
-            padding: 22px 18px 18px;
+            padding: 50px 18px 20px;
           }
 
           .card-inspection-art .mode-inspected {
-            width: 190px;
-            height: 274px;
+            width: 200px;
+            height: 288px;
           }
 
           .card-inspection-details {
@@ -2158,6 +2412,83 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
           .card-inspection-stats {
             margin: 14px 0 8px;
+          }
+
+          .victory-title,
+          .defeat-title {
+            font-size: 2rem;
+          }
+        }
+
+        @media (max-width: 1100px) and (orientation: landscape) {
+          .game-hud {
+            --mobile-hand-height: 168px;
+          }
+
+          .mobile-action-rail {
+            top: calc(40px + env(safe-area-inset-top));
+            right: max(8px, env(safe-area-inset-right));
+            flex-direction: row;
+            gap: 5px;
+          }
+
+          .mobile-control-button {
+            width: 44px;
+            min-height: 40px;
+            height: 40px;
+            padding: 4px;
+          }
+
+          .mobile-control-button span {
+            display: none;
+          }
+
+          .mobile-end-turn {
+            width: 70px;
+          }
+
+          .mobile-end-turn span {
+            display: inline;
+          }
+
+          .player-hand-container {
+            padding-block: 4px;
+          }
+
+          .hand-stage-meta {
+            min-height: 22px;
+            padding-bottom: 2px;
+          }
+
+          .player-hand-scroll {
+            gap: 10px;
+            padding-bottom: 2px;
+          }
+
+          .player-hand-scroll .mode-hand {
+            width: 96px;
+            height: 137px;
+          }
+
+          .hud-sidebar {
+            max-height: calc(100dvh - var(--mobile-hand-height) - 64px);
+          }
+
+          .card-inspection-modal {
+            grid-template-columns: 180px minmax(0, 1fr);
+          }
+
+          .card-inspection-art .mode-inspected {
+            width: 170px;
+            height: 244px;
+          }
+
+          .card-inspection-stats {
+            margin: 10px 0;
+          }
+
+          .card-inspection-section {
+            padding: 9px 0;
           }
         }
       `}</style>

@@ -52,6 +52,15 @@ export const CardDOM: React.FC<CardDOMProps> = ({
   return (
     <div
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `Ver detalles de ${card.name}` : undefined}
       className={[
         'card-container',
         factionClass,

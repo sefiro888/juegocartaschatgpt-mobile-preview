@@ -46,13 +46,28 @@
   padding: 0;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
 body {
   background-color: var(--bg-dark);
   color: var(--color-text-main);
   font-family: var(--font-sans);
   overflow: hidden;
+  overscroll-behavior: none;
   user-select: none;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+  touch-action: manipulation;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -236,4 +251,14 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@media (pointer: coarse) {
+  button {
+    min-height: 44px;
+  }
+
+  * {
+    scrollbar-width: thin;
+  }
 }

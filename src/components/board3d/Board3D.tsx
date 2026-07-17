@@ -520,6 +520,23 @@ const ResponsiveCamera: React.FC = () => {
   return null;
 };
 
+function useCompactRenderer(): boolean {
+  const [isCompact, setIsCompact] = useState(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 1100px), (pointer: coarse)').matches
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 1100px), (pointer: coarse)');
+    const update = () => setIsCompact(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  return isCompact;
+}
+
 export const Board3D: React.FC = () => {
   const {
     gameState,
@@ -535,6 +552,7 @@ export const Board3D: React.FC = () => {
     attack,
     castSpell,
   } = useGameStore();
+  const isCompactRenderer = useCompactRenderer();
   const [deathExplosions, setDeathExplosions] = useState<Array<{ id: string; position: Position; faction: string }>>([]);
   const [obstacleCollapses, setObstacleCollapses] = useState<Array<{ id: string; entity: BoardEntity }>>([]);
   const [movementAnimationRoutes, setMovementAnimationRoutes] = useState<Record<string, Position[]>>({});
@@ -866,11 +884,11 @@ export const Board3D: React.FC = () => {
       <Canvas
         key={canvasVersion}
         camera={{ position: [11.8, 19.2, 23.5], fov: 43, near: 0.1, far: 170 }}
-        shadows={{ type: THREE.PCFShadowMap }}
-        dpr={[1, 1.1]}
+        shadows={isCompactRenderer ? false : { type: THREE.PCFShadowMap }}
+        dpr={isCompactRenderer ? [0.8, 1] : [1, 1.1]}
         className="canvas3d"
         gl={{
-          antialias: true,
+          antialias: !isCompactRenderer,
           alpha: false,
           stencil: false,
           preserveDrawingBuffer: false,
@@ -992,10 +1010,12 @@ export const Board3D: React.FC = () => {
             enablePan={false}
             enableDamping
             dampingFactor={0.075}
+            rotateSpeed={isCompactRenderer ? 0.72 : 1}
+            zoomSpeed={isCompactRenderer ? 0.85 : 1}
             minPolarAngle={0.72}
             maxPolarAngle={1.05}
-            minDistance={24}
-            maxDistance={36}
+            minDistance={isCompactRenderer ? 22 : 24}
+            maxDistance={isCompactRenderer ? 38 : 36}
           />
         </SanctuaryMaterialsProvider>
       </Canvas>
@@ -1103,6 +1123,20 @@ export const Board3D: React.FC = () => {
         .canvas-recovery button:disabled {
           cursor: wait;
           opacity: 0.68;
+        }
+        @media (max-width: 1100px) {
+          .tactical-preview {
+            top: 8px;
+            left: 8px;
+            width: min(170px, calc(100% - 78px));
+            padding: 8px 9px;
+          }
+          .tactical-preview-detail {
+            font-size: 0.74rem;
+          }
+          .tactical-preview-warning {
+            display: none;
+          }
         }
       `}</style>
     </div>

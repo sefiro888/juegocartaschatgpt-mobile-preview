@@ -8,9 +8,12 @@ interface GalleryProps {
   onBack?: () => void;
 }
 
+const GALLERY_BATCH_SIZE = 48;
+
 export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
   const [selectedFaction, setSelectedFaction] = useState<Faction | 'ALL'>('ALL');
   const [inspectedCard, setInspectedCard] = useState<Card | null>(null);
+  const [visibleCount, setVisibleCount] = useState(GALLERY_BATCH_SIZE);
 
   const factions: { id: Faction | 'ALL'; name: string }[] = [
     { id: 'ALL', name: 'Todas' },
@@ -28,6 +31,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
     if (selectedFaction === 'ALL') return true;
     return card.faction === selectedFaction;
   });
+  const visibleCards = filteredCards.slice(0, visibleCount);
 
   return (
     <div className="gallery-view">
@@ -38,7 +42,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           </button>
         )}
         <h1>Colección de Cartas</h1>
-        <p className="gallery-subtitle">Muestra de las 400 cartas que habitan el Nexo</p>
+        <p className="gallery-subtitle">{cardsList.length} cartas y elementos que habitan el Nexo</p>
       </div>
 
       {/* FACTION TABS */}
@@ -47,7 +51,10 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           <button
             key={f.id}
             className={`tab-button ${selectedFaction === f.id ? 'active' : ''}`}
-            onClick={() => setSelectedFaction(f.id)}
+            onClick={() => {
+              setSelectedFaction(f.id);
+              setVisibleCount(GALLERY_BATCH_SIZE);
+            }}
           >
             {f.name}
           </button>
@@ -57,7 +64,7 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
       {/* CARDS GRID */}
       <div className="gallery-grid-wrapper">
         <div className="gallery-grid">
-          {filteredCards.map(card => (
+          {visibleCards.map(card => (
             <div key={card.id} className="grid-card-item">
               <CardDOM
                 card={card}
@@ -66,6 +73,18 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
               />
             </div>
           ))}
+        </div>
+        <div className="gallery-progress">
+          <span>Mostrando {visibleCards.length} de {filteredCards.length}</span>
+          {visibleCount < filteredCards.length && (
+            <button
+              type="button"
+              className="gallery-load-more"
+              onClick={() => setVisibleCount((current) => current + GALLERY_BATCH_SIZE)}
+            >
+              Ver más cartas
+            </button>
+          )}
         </div>
       </div>
 
@@ -78,9 +97,15 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           artistNote: 'Ilustración del nexo.'
         };
         return (
-          <div className="lore-vault-overlay" onClick={() => setInspectedCard(null)}>
+          <div
+            className="lore-vault-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Información de ${inspectedCard.name}`}
+            onClick={() => setInspectedCard(null)}
+          >
             <div className="lore-vault-content glass-panel-heavy" onClick={e => e.stopPropagation()}>
-              <button className="close-vault-button" onClick={() => setInspectedCard(null)}>
+              <button className="close-vault-button" aria-label="Cerrar información de la carta" onClick={() => setInspectedCard(null)}>
                 ✕
               </button>
               
@@ -260,7 +285,32 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
           gap: 24px;
           justify-items: center;
-          padding-bottom: 40px;
+          padding-bottom: 24px;
+        }
+
+        .gallery-progress {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          padding: 6px 0 28px;
+          color: var(--color-text-muted);
+          font-size: 0.8rem;
+        }
+
+        .gallery-load-more {
+          min-height: 44px;
+          padding: 10px 18px;
+          border: 1px solid rgba(139, 221, 255, 0.38);
+          border-radius: 6px;
+          background: rgba(16, 54, 72, 0.72);
+          color: #e4f8ff;
+          font: 700 0.78rem var(--font-sans);
+          cursor: pointer;
+        }
+
+        .gallery-load-more:hover {
+          background: rgba(26, 83, 108, 0.86);
         }
 
         .grid-card-item {
@@ -470,6 +520,164 @@ export const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
+        }
+
+        @media (max-width: 900px) {
+          .gallery-view {
+            height: 100dvh;
+            padding:
+              calc(16px + env(safe-area-inset-top))
+              max(18px, env(safe-area-inset-right))
+              calc(12px + env(safe-area-inset-bottom))
+              max(18px, env(safe-area-inset-left));
+          }
+
+          .gallery-header {
+            min-height: 82px;
+            margin-bottom: 12px;
+            padding-top: 42px;
+          }
+
+          .back-button {
+            min-height: 40px;
+            padding: 7px 12px;
+          }
+
+          .gallery-header h1 {
+            font-size: 1.8rem;
+          }
+
+          .gallery-subtitle {
+            font-size: 0.8rem;
+          }
+
+          .faction-tabs {
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            gap: 8px;
+            overflow-x: auto;
+            margin: 0 -2px 14px;
+            padding: 2px 2px 8px;
+            scrollbar-width: none;
+          }
+
+          .faction-tabs::-webkit-scrollbar {
+            display: none;
+          }
+
+          .tab-button {
+            flex: 0 0 auto;
+            min-height: 44px;
+            padding: 9px 14px;
+          }
+
+          .gallery-grid-wrapper {
+            padding-right: 2px;
+          }
+
+          .gallery-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 18px 12px;
+            padding-bottom: 24px;
+          }
+
+          .gallery-grid .mode-gallery {
+            width: 160px;
+            height: 232px;
+          }
+
+          .lore-vault-overlay {
+            align-items: flex-start;
+            padding:
+              calc(12px + env(safe-area-inset-top))
+              12px
+              calc(12px + env(safe-area-inset-bottom));
+          }
+
+          .lore-vault-content {
+            grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+            gap: 22px;
+            width: 100%;
+            max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            padding: 48px 22px 22px;
+            overflow-y: auto;
+          }
+
+          .vault-left-col .mode-inspected {
+            width: 220px;
+            height: 316px;
+          }
+
+          .vault-right-col {
+            max-height: none;
+            overflow: visible;
+            padding-right: 0;
+          }
+
+          .vault-title {
+            font-size: 1.8rem;
+          }
+        }
+
+        @media (max-width: 580px) {
+          .gallery-view {
+            padding-inline: 10px;
+          }
+
+          .gallery-header {
+            min-height: 76px;
+          }
+
+          .gallery-header h1 {
+            font-size: 1.5rem;
+          }
+
+          .gallery-subtitle {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .gallery-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 8px;
+          }
+
+          .gallery-progress {
+            flex-direction: column;
+            gap: 8px;
+          }
+
+          .gallery-grid .mode-gallery {
+            width: 148px;
+            height: 215px;
+          }
+
+          .lore-vault-content {
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding: 50px 16px 20px;
+          }
+
+          .vault-left-col .mode-inspected {
+            width: 210px;
+            height: 302px;
+          }
+
+          .vault-header {
+            flex-wrap: wrap;
+          }
+
+          .vault-title {
+            font-size: 1.55rem;
+          }
+        }
+
+        @media (max-width: 350px) {
+          .gallery-grid .mode-gallery {
+            width: 138px;
+            height: 200px;
+          }
         }
       `}</style>
     </div>

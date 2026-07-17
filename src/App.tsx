@@ -175,18 +175,18 @@ function App() {
               </div>
               
               <div className="deck-choices-list">
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'FURIA')}>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'FURIA')}>
                   <h4>🔥 Mazo Clásico</h4>
                   <p>Equilibrio ofensivo con criaturas y hechizos clásicos.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'FURIA_AGRO')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'FURIA_AGRO')}>
                   <h4>⚡ Fuego Rápido (Agro)</h4>
                   <p>Invocaciones veloces de Trasgos y Sabuesos de carga.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'FURIA_CONTROL')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'FURIA_CONTROL')}>
                   <h4>🌋 Caldera (Control)</h4>
                   <p>Grandes Dragones, volcanes y hechizos de daño masivo.</p>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -206,18 +206,18 @@ function App() {
               </div>
 
               <div className="deck-choices-list">
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'ARCANO')}>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'ARCANO')}>
                   <h4>❄️ Mazo Clásico</h4>
                   <p>Control y robo de maná clásico balanceado.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'ARCANO_FREEZE')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'ARCANO_FREEZE')}>
                   <h4>🥶 Ventisca (Control)</h4>
                   <p>Muros de escarcha, Golems de glaciar y congelamiento.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'ARCANO_SPELL')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'ARCANO_SPELL')}>
                   <h4>🔮 Magia de Runas (Combo)</h4>
                   <p>Búhos arcanos, tejedores del tiempo y combo de hechizos.</p>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -237,62 +237,62 @@ function App() {
               </div>
 
               <div className="deck-choices-list">
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'NEXO_HIBRIDO')}>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'NEXO_HIBRIDO')}>
                   <h4>⚡ Combustión Rúnica</h4>
                   <p>Mezcla agresiva de Furia y control congelante de Arcano.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'BARAJA_BESTIAS')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'BARAJA_BESTIAS')}>
                   <h4>🦁 Manada del Nexo</h4>
                   <p>Bestias: Sabuesos, Búhos, Dracos y Elementales.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'FORTALEZA_RUNICA')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'FORTALEZA_RUNICA')}>
                   <h4>🛡️ Fortaleza Antigua</h4>
                   <p>Estructuras defensivas, Forjas y Golems colosales.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_SOMBRA')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_SOMBRA')}>
                   <h4>🕸️ Reino Umbrío</h4>
                   <p>Fieles de Sombra: Espectros, Vampiros y Nigromancia.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_NATURALEZA')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_NATURALEZA')}>
                   <h4>🌿 Abrazo Forestal</h4>
                   <p>Naturaleza pura: Centauros, Lobos y Sanaciones salvajes.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_CELESTIAL')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_CELESTIAL')}>
                   <h4>🦅 Reinos del Aire</h4>
                   <p>Animales Celestiales: Ángeles, Grifos, Halcones y Pegasos.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_ACUATICO')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_ACUATICO')}>
                   <h4>🌊 Abismo Marino</h4>
                   <p>Criaturas acuáticas, Leviatanes y magias de agua abisales.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_RENEGADOS')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_RENEGADOS')}>
                   <h4>🗑️ Pila de Renegados</h4>
                   <p>Cartas rechazadas, descartes caóticos y Goblins locos.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_ORCOS_BESTIAS')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_ORCOS_BESTIAS')}>
                   <h4>👹 Horda Orca</h4>
                   <p>Sinergia brutal de Orcos de Sombra y Bestias de Furia.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_VACIO')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_VACIO')}>
                   <h4>🌌 Vacío Entrópico</h4>
                   <p>Falla del Vacío: Horrores, parásitos y magias de aniquilación.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_ORDEN')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('ARCANO', 'MAZO_ORDEN')}>
                   <h4>🛡️ Edicto Sagrado</h4>
                   <p>Unidades de Orden: Ángeles, paladines y escudos divinos.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_ULTIMO_ALIENTO')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_ULTIMO_ALIENTO')}>
                   <h4>💀 Último Aliento</h4>
                   <p>Mazo de sacrificio y fénix que reviven al morir.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_DOBLE_ATAQUE')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_DOBLE_ATAQUE')}>
                   <h4>🌪️ Ráfaga de Furia</h4>
                   <p>Doble golpe: Atacantes que golpean dos veces por turno.</p>
-                </div>
-                <div className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_FORESTAL_CONTROL')}>
+                </button>
+                <button type="button" className="deck-choice-item" onClick={() => handleSelectFaction('FURIA', 'MAZO_FORESTAL_CONTROL')}>
                   <h4>🌳 Raíces de Vida</h4>
                   <p>Control de Naturaleza: Curación constante y muros gruesos.</p>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -699,6 +699,9 @@ function App() {
         }
 
         .deck-choice-item {
+          width: 100%;
+          font: inherit;
+          color: inherit;
           background: rgba(255, 255, 255, 0.02);
           border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 8px;
@@ -748,6 +751,226 @@ function App() {
         .back-menu-btn:hover {
           color: white;
           transform: translateX(-4px);
+        }
+
+        @media (max-width: 1100px) {
+          .app-container,
+          .main-menu-container,
+          .faction-select-container {
+            min-height: 100dvh;
+            height: 100dvh;
+          }
+
+          .main-menu-container {
+            justify-content: center;
+            overflow-y: auto;
+            padding:
+              calc(24px + env(safe-area-inset-top))
+              max(20px, env(safe-area-inset-right))
+              calc(54px + env(safe-area-inset-bottom))
+              max(20px, env(safe-area-inset-left));
+          }
+
+          .menu-header {
+            margin-bottom: 28px;
+          }
+
+          .game-title-logo {
+            font-size: 3rem;
+            letter-spacing: 0;
+            line-height: 1.02;
+          }
+
+          .menu-actions {
+            width: min(360px, 100%);
+            padding: 22px;
+          }
+
+          .menu-btn {
+            min-height: 48px;
+          }
+
+          .menu-credits {
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            padding-inline: 16px;
+            text-align: center;
+          }
+
+          .faction-select-container {
+            justify-content: flex-start;
+            overflow-y: auto;
+            padding:
+              calc(28px + env(safe-area-inset-top))
+              max(22px, env(safe-area-inset-right))
+              calc(84px + env(safe-area-inset-bottom))
+              max(22px, env(safe-area-inset-left));
+          }
+
+          .faction-heading {
+            font-size: 2rem;
+            text-align: center;
+          }
+
+          .select-desc {
+            margin-bottom: 24px;
+          }
+
+          .factions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: start;
+            gap: 18px;
+            max-width: 900px;
+            margin-bottom: 0;
+          }
+
+          .faction-card {
+            min-width: 0;
+            padding: 22px 18px;
+            cursor: default;
+          }
+
+          .faction-card.hybrid {
+            grid-column: 1 / -1;
+          }
+
+          .faction-card:hover,
+          .faction-card.furia:hover,
+          .faction-card.arcano:hover,
+          .faction-card.hybrid:hover {
+            transform: none;
+          }
+
+          .deck-choices-list {
+            max-height: none;
+            overflow: visible;
+          }
+
+          .deck-choice-item {
+            min-height: 58px;
+            padding: 12px 14px;
+          }
+
+          .back-menu-btn {
+            position: fixed;
+            z-index: 20;
+            left: max(16px, env(safe-area-inset-left));
+            bottom: calc(14px + env(safe-area-inset-bottom));
+            min-height: 44px;
+            padding: 0 14px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            color: #d7e4ec;
+            background: rgba(5, 10, 18, 0.9);
+            backdrop-filter: blur(12px);
+          }
+        }
+
+        @media (max-width: 680px) {
+          .main-menu-container {
+            justify-content: flex-start;
+          }
+
+          .menu-header {
+            width: 100%;
+            margin-top: auto;
+            margin-bottom: 24px;
+          }
+
+          .game-title-logo {
+            max-width: 100%;
+            font-size: 2.55rem;
+            line-height: 1.03;
+            overflow-wrap: anywhere;
+          }
+
+          .game-tagline {
+            font-size: 0.88rem;
+            line-height: 1.45;
+            letter-spacing: 0;
+          }
+
+          .menu-actions {
+            margin-bottom: auto;
+            padding: 18px;
+            gap: 12px;
+          }
+
+          .faction-select-container {
+            padding-inline: max(14px, env(safe-area-inset-left));
+          }
+
+          .faction-heading {
+            font-size: 1.65rem;
+          }
+
+          .select-desc {
+            font-size: 0.84rem;
+            line-height: 1.45;
+          }
+
+          .factions-grid {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px;
+          }
+
+          .faction-card.hybrid {
+            grid-column: auto;
+          }
+
+          .faction-card {
+            width: 100%;
+            padding: 18px 16px;
+          }
+
+          .faction-art-preview {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 10px;
+          }
+
+          .faction-art-icon {
+            font-size: 2rem;
+          }
+
+          .faction-card h3 {
+            font-size: 1.55rem;
+          }
+
+          .faction-lore {
+            flex: none;
+            font-size: 0.84rem;
+          }
+
+          .faction-traits {
+            margin-bottom: 10px;
+          }
+        }
+
+        @media (max-height: 620px) and (orientation: landscape) {
+          .main-menu-container {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 28px;
+            padding-block: 18px;
+          }
+
+          .menu-header {
+            margin: 0;
+          }
+
+          .game-title-logo {
+            font-size: 2.4rem;
+          }
+
+          .menu-actions {
+            margin: 0;
+            padding: 16px;
+          }
+
+          .menu-credits {
+            display: none;
+          }
         }
       `}</style>
     </div>

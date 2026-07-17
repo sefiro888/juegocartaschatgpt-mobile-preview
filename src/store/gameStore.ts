@@ -9,6 +9,8 @@ import { isBoardObstacle } from '../core/boardPathfinding';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { OnlineMatchRecord, OnlineSession } from '../online/types';
 import { shouldApplyOnlineRevision } from '../online/syncPolicy';
+import type { DeckId } from '../core/deckCatalog';
+import { configureOnlineGuestDeck, createOnlineGameState } from '../online/gameSetup';
 
 type MatchService = typeof import('../online/matchService');
 type SupabaseService = typeof import('../online/supabaseClient');
@@ -57,13 +59,8 @@ function getBoardEntityName(entity: BoardEntity | undefined): string {
   return CARDS_DB[entity.cardId]?.name ?? 'Unidad';
 }
 
-function createOnlineGameState(playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string): GameState {
-  const playerDeck = getPreconstructedDeck(deckTheme || playerFaction);
-  const opponentFaction = playerFaction === 'FURIA' ? 'ARCANO' : 'FURIA';
-  const opponentDeck = getPreconstructedDeck(opponentFaction);
-  const playerCommander = playerFaction === 'FURIA' ? CARDS_DB['comandante-furia'] : CARDS_DB['comandante-arcano'];
-  const opponentCommander = opponentFaction === 'FURIA' ? CARDS_DB['comandante-furia'] : CARDS_DB['comandante-arcano'];
-  return initializeGame(playerDeck, opponentDeck, playerCommander, opponentCommander, `online-game-${Date.now()}`);
+function getCommanderFaction(card: Card): 'FURIA' | 'ARCANO' {
+  return card.faction === 'FURIA' ? 'FURIA' : 'ARCANO';
 }
 
 function toOnlineSession(match: OnlineMatchRecord, role: 'host' | 'guest'): OnlineSession {
@@ -193,8 +190,8 @@ interface GameStore {
   
   // Game Actions
   startNewGame: (playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string) => void;
-  createOnlineGame: (playerFaction: 'FURIA' | 'ARCANO', deckTheme?: string) => Promise<string>;
-  joinOnlineGame: (roomCode: string) => Promise<void>;
+  createOnlineGame: (deckId: DeckId) => Promise<string>;
+  joinOnlineGame: (roomCode: string, deckId: DeckId) => Promise<void>;
   leaveOnlineGame: () => Promise<void>;
   selectCardInHand: (card: Card | null) => void;
   selectEntity: (entity: BoardEntity | null) => void;
@@ -268,14 +265,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  createOnlineGame: async (playerFaction, deckTheme) => {
+  createOnlineGame: async (deckId) => {
     aiTurnToken++;
     set({ isOnlineLoading: true, onlineError: null });
     try {
       const [matchService, supabaseService] = await Promise.all([loadMatchService(), loadSupabaseService()]);
       if (!supabaseService.isSupabaseConfigured) throw new Error('La conexion online no esta configurada.');
       const playerId = await supabaseService.getOnlinePlayerId();
-      const gameState = createOnlineGameState(playerFaction, deckTheme);
+      const gameState = createOnlineGameState(deckId);
       const match = await matchService.createOnlineMatch(playerId, gameState);
       await matchService.unsubscribeFromOnlineMatch(onlineChannel);
       set({
@@ -285,7 +282,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         hoveredEntity: null,
         inspectedCard: null,
         gameEvents: [createGameEvent('Sala creada. Comparte el enlace con tu rival.', 'system')],
-        activeFaction: playerFaction,
+        activeFaction: getCommanderFaction(gameState.player.commander),
         isAIThinking: false,
         presentationAction: null,
         localController: 'PLAYER',
@@ -302,7 +299,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  joinOnlineGame: async (roomCode) => {
+  joinOnlineGame: async (roomCode, deckId) => {
     aiTurnToken++;
     set({ isOnlineLoading: true, onlineError: null });
     try {
@@ -312,8 +309,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const foundMatch = await matchService.getOnlineMatch(roomCode);
       if (!foundMatch) throw new Error('No existe una sala con ese codigo.');
       const role = foundMatch.host_id === playerId ? 'host' : 'guest';
+      const gameState = role === 'guest' && foundMatch.guest_id !== playerId
+        ? configureOnlineGuestDeck(foundMatch.game_state, deckId)
+        : foundMatch.game_state;
       const match = role === 'guest' && foundMatch.guest_id !== playerId
-        ? await matchService.joinOnlineMatch(foundMatch, playerId)
+        ? await matchService.joinOnlineMatch(foundMatch, playerId, gameState)
         : foundMatch;
 
       await matchService.unsubscribeFromOnlineMatch(onlineChannel);
@@ -324,7 +324,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
         hoveredEntity: null,
         inspectedCard: null,
         gameEvents: [createGameEvent(role === 'host' ? 'Sala recuperada.' : 'Te has unido a la sala.', 'system')],
-        activeFaction: role === 'host' ? 'FURIA' : 'ARCANO',
+        activeFaction: role === 'host'
+          ? getCommanderFaction(match.game_state.player.commander)
+          : getCommanderFaction(match.game_state.opponent.commander),
         isAIThinking: false,
         presentationAction: null,
         localController: role === 'host' ? 'PLAYER' : 'OPPONENT',

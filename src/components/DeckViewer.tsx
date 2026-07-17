@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getPreconstructedDeck } from '../core/cardsDb';
+import { DECK_CATALOG, type DeckId } from '../core/deckCatalog';
 import { LORE_DB } from '../core/loreDb';
 import { CardDOM } from './CardDOM';
 import type { Card } from '../types/card';
@@ -7,49 +8,6 @@ import type { Card } from '../types/card';
 interface DeckViewerProps {
   onBack?: () => void;
 }
-
-type DeckTone = 'furia' | 'arcano' | 'neutral';
-type DeckId =
-  | 'FURIA' | 'FURIA_AGRO' | 'FURIA_CONTROL'
-  | 'ARCANO' | 'ARCANO_FREEZE' | 'ARCANO_SPELL'
-  | 'NEXO_HIBRIDO' | 'BARAJA_BESTIAS' | 'FORTALEZA_RUNICA'
-  | 'MAZO_VACIO' | 'MAZO_ORDEN' | 'MAZO_ULTIMO_ALIENTO'
-  | 'MAZO_DOBLE_ATAQUE' | 'MAZO_FORESTAL_CONTROL' | 'MAZO_SOMBRA'
-  | 'MAZO_NATURALEZA' | 'MAZO_CELESTIAL' | 'MAZO_ACUATICO'
-  | 'MAZO_RENEGADOS' | 'MAZO_ORCOS_BESTIAS';
-
-interface DeckDefinition {
-  id: DeckId;
-  name: string;
-  faction: string;
-  archetype: string;
-  description: string;
-  tone: DeckTone;
-  mark: string;
-}
-
-const DECK_CATALOG: DeckDefinition[] = [
-  { id: 'FURIA', name: 'Ignis', faction: 'Furia', archetype: 'Clasico', description: 'Presion directa y criaturas de fuego.', tone: 'furia', mark: 'F' },
-  { id: 'FURIA_AGRO', name: 'Fuego Rapido', faction: 'Furia', archetype: 'Agro', description: 'Carga, dano temprano y ritmo constante.', tone: 'furia', mark: 'A' },
-  { id: 'FURIA_CONTROL', name: 'Caldera', faction: 'Furia', archetype: 'Control', description: 'Dragones grandes y dano de area.', tone: 'furia', mark: 'C' },
-  { id: 'ARCANO', name: 'Aethelgard', faction: 'Arcano', archetype: 'Clasico', description: 'Recursos, control y respuestas flexibles.', tone: 'arcano', mark: 'A' },
-  { id: 'ARCANO_FREEZE', name: 'Ventisca', faction: 'Arcano', archetype: 'Control', description: 'Congela amenazas y gana tiempo.', tone: 'arcano', mark: 'V' },
-  { id: 'ARCANO_SPELL', name: 'Magia de Runas', faction: 'Arcano', archetype: 'Combo', description: 'Hechizos encadenados y robo de cartas.', tone: 'arcano', mark: 'R' },
-  { id: 'NEXO_HIBRIDO', name: 'Nexo Hibrido', faction: 'Mixto', archetype: 'Equilibrio', description: 'Amenazas de Furia y Arcano en un solo plan.', tone: 'neutral', mark: 'N' },
-  { id: 'BARAJA_BESTIAS', name: 'Llamada Bestial', faction: 'Mixto', archetype: 'Bestias', description: 'Criaturas agresivas con apoyo elemental.', tone: 'neutral', mark: 'B' },
-  { id: 'FORTALEZA_RUNICA', name: 'Fortaleza Runica', faction: 'Mixto', archetype: 'Estructuras', description: 'Torres, muros y defensa progresiva.', tone: 'neutral', mark: 'R' },
-  { id: 'MAZO_VACIO', name: 'Vacio Entropico', faction: 'Vacio', archetype: 'Desgaste', description: 'Horrores y efectos que descomponen el tablero.', tone: 'neutral', mark: 'V' },
-  { id: 'MAZO_ORDEN', name: 'Edicto Sagrado', faction: 'Orden', archetype: 'Proteccion', description: 'Unidades resistentes y escudos divinos.', tone: 'arcano', mark: 'O' },
-  { id: 'MAZO_ULTIMO_ALIENTO', name: 'Ultimo Aliento', faction: 'Mixto', archetype: 'Sacrificio', description: 'Morir es solo el comienzo de la siguiente jugada.', tone: 'neutral', mark: 'U' },
-  { id: 'MAZO_DOBLE_ATAQUE', name: 'Rafaga de Furia', faction: 'Mixto', archetype: 'Doble golpe', description: 'Cargas y ataques que buscan cerrar la partida.', tone: 'furia', mark: 'D' },
-  { id: 'MAZO_FORESTAL_CONTROL', name: 'Raices de Vida', faction: 'Naturaleza', archetype: 'Control', description: 'Curacion, muros y control del terreno.', tone: 'neutral', mark: 'R' },
-  { id: 'MAZO_SOMBRA', name: 'Reino Umbrio', faction: 'Sombra', archetype: 'Niebla', description: 'Espectros, vampiros y presion silenciosa.', tone: 'neutral', mark: 'S' },
-  { id: 'MAZO_NATURALEZA', name: 'Abrazo Forestal', faction: 'Naturaleza', archetype: 'Vida', description: 'Bestias, crecimiento y recuperacion.', tone: 'neutral', mark: 'N' },
-  { id: 'MAZO_CELESTIAL', name: 'Reinos del Aire', faction: 'Orden', archetype: 'Celestial', description: 'Criaturas voladoras y presencia desde el cielo.', tone: 'arcano', mark: 'C' },
-  { id: 'MAZO_ACUATICO', name: 'Abismo Marino', faction: 'Abisal', archetype: 'Aguas profundas', description: 'Leviatanes, hielo y amenazas de gran alcance.', tone: 'arcano', mark: 'M' },
-  { id: 'MAZO_RENEGADOS', name: 'Pila de Renegados', faction: 'Mixto', archetype: 'Descarte', description: 'Caos, descarte y cartas que vuelven con fuerza.', tone: 'furia', mark: 'X' },
-  { id: 'MAZO_ORCOS_BESTIAS', name: 'Horda Orca', faction: 'Furia', archetype: 'Horda', description: 'Orcos y bestias que dominan por volumen.', tone: 'furia', mark: 'H' },
-];
 
 interface GroupedCard {
   card: Card;
@@ -242,9 +200,119 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({ onBack }) => {
         .artist-label { color: #738e9d; font-size: .58rem; font-weight: 800; letter-spacing: .1em; }
         .artist-name { color: #eef6fb; font-size: .78rem; font-weight: 700; }
         .style-tag { color: #8bddff; }
-        @media (max-width: 980px) { .deck-viewer { padding: 18px; } .deck-content-wrapper { grid-template-columns: 280px minmax(0,1fr); } .deck-showcase { grid-template-columns: 48px minmax(0,1fr); } .deck-showcase-mark { width: 48px; height: 48px; } .deck-showcase-stats { grid-column: 2; justify-content: start; text-align: left; } .deck-stat-chips { justify-content: flex-start; } .deck-cards-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px 10px; } .deck-card-tile, .deck-card-natural-preview { width: 170px; } .deck-card-natural-preview { height: 246px; } }
-        @media (max-width: 720px) { .deck-viewer { overflow-y: auto; } .deck-header { min-height: 115px; align-items: flex-end; } .deck-header h1 { font-size: 1.8rem; } .deck-header-count { right: 0; top: 0; } .deck-content-wrapper { display: flex; flex-direction: column; } .deck-library { max-height: 270px; } .deck-catalog { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); } .deck-showcase { grid-template-columns: 48px minmax(0,1fr); } .deck-showcase-stats { grid-column: 1 / -1; } .deck-cards-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 16px 8px; justify-items: center; } .deck-card-tile, .deck-card-natural-preview { width: 145px; } .deck-card-natural-preview { height: 210px; } .lore-vault-content { grid-template-columns: 1fr; gap: 16px; padding: 24px 18px 18px; overflow-y: auto; } .vault-left-col .mode-inspected { width: 210px; height: 300px; } }
-        @media (max-width: 440px) { .back-btn { position: static; align-self: flex-start; } .deck-header { align-items: center; justify-content: space-between; } .deck-header-copy { text-align: left; } .deck-header-count { position: static; } .deck-catalog { grid-template-columns: 1fr; } .deck-showcase { padding: 14px; } .deck-showcase h2 { font-size: 1.35rem; } }
+        @media (max-width: 980px) {
+          .deck-viewer {
+            height: 100dvh;
+            padding: 18px;
+          }
+          .deck-content-wrapper { grid-template-columns: 280px minmax(0,1fr); }
+          .deck-showcase { grid-template-columns: 48px minmax(0,1fr); }
+          .deck-showcase-mark { width: 48px; height: 48px; }
+          .deck-showcase-stats { grid-column: 2; justify-content: start; text-align: left; }
+          .deck-stat-chips { justify-content: flex-start; }
+          .deck-cards-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px 10px; }
+          .deck-card-tile, .deck-card-natural-preview { width: 170px; }
+          .deck-card-natural-preview { height: 246px; }
+        }
+
+        @media (max-width: 820px) {
+          .deck-viewer {
+            gap: 12px;
+            overflow-y: auto;
+            padding:
+              calc(12px + env(safe-area-inset-top))
+              12px
+              calc(18px + env(safe-area-inset-bottom));
+          }
+          .deck-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            min-height: 94px;
+            gap: 8px;
+          }
+          .back-btn {
+            position: static;
+            grid-column: 1 / -1;
+            justify-self: start;
+            min-height: 40px;
+          }
+          .deck-header-copy { text-align: left; }
+          .deck-header h1 { font-size: 1.65rem; }
+          .deck-subtitle { display: none; }
+          .deck-header-count {
+            position: static;
+            grid-column: 2;
+            grid-row: 2;
+          }
+          .deck-header-copy {
+            grid-column: 1;
+            grid-row: 2;
+          }
+          .deck-content-wrapper {
+            display: flex;
+            flex: none;
+            flex-direction: column;
+          }
+          .deck-library {
+            max-height: none;
+            padding: 14px;
+          }
+          .deck-library-intro { margin-block: 8px 10px; }
+          .deck-catalog {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 7px;
+            scrollbar-width: thin;
+          }
+          .deck-catalog-card {
+            flex: 0 0 176px;
+            min-height: 48px;
+          }
+          .deck-main-panel { min-height: auto; }
+          .deck-showcase {
+            grid-template-columns: 44px minmax(0,1fr);
+            gap: 12px;
+            padding: 14px;
+          }
+          .deck-showcase-mark { width: 44px; height: 44px; }
+          .deck-showcase-stats { grid-column: 1 / -1; }
+          .deck-list-panel { padding: 14px 10px; }
+          .deck-list-hint { display: none; }
+          .deck-cards-grid {
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+            gap: 16px 8px;
+            overflow: visible;
+            padding-inline: 0;
+          }
+          .deck-card-tile, .deck-card-natural-preview { width: 145px; }
+          .deck-card-natural-preview { height: 210px; }
+          .lore-vault-overlay {
+            align-items: flex-start;
+            padding:
+              calc(12px + env(safe-area-inset-top))
+              12px
+              calc(12px + env(safe-area-inset-bottom));
+          }
+          .lore-vault-content {
+            grid-template-columns: 1fr;
+            gap: 16px;
+            width: 100%;
+            max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            padding: 50px 18px 20px;
+            overflow-y: auto;
+          }
+          .vault-left-col .mode-inspected { width: 210px; height: 300px; }
+          .vault-right-col { overflow: visible; padding-right: 0; }
+        }
+
+        @media (max-width: 360px) {
+          .deck-card-tile, .deck-card-natural-preview { width: 136px; }
+          .deck-card-natural-preview { height: 197px; }
+        }
       `}</style>
     </div>
   );

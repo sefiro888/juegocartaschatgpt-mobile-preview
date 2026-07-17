@@ -45,7 +45,11 @@ export async function getOnlineMatch(roomCode: string): Promise<OnlineMatchRecor
   return data as OnlineMatchRecord | null;
 }
 
-export async function joinOnlineMatch(match: OnlineMatchRecord, guestId: string): Promise<OnlineMatchRecord> {
+export async function joinOnlineMatch(
+  match: OnlineMatchRecord,
+  guestId: string,
+  gameState: GameState,
+): Promise<OnlineMatchRecord> {
   const client = requireClient();
   if (match.guest_id && match.guest_id !== guestId) throw new Error('La sala ya tiene dos jugadores.');
 
@@ -54,6 +58,7 @@ export async function joinOnlineMatch(match: OnlineMatchRecord, guestId: string)
     .update({
       guest_id: guestId,
       status: 'active',
+      game_state: gameState,
       revision: match.revision + 1,
       updated_at: new Date().toISOString(),
     })
