@@ -861,6 +861,12 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
                     '--hand-offset': `${Math.abs(idx - (player.hand.length - 1) / 2) * 2}px`,
                   } as React.CSSProperties}
                   onClick={() => {
+                    const usesTouchLayout = window.matchMedia('(max-width: 1100px), (pointer: coarse)').matches;
+                    if (usesTouchLayout && card.type === 'MANA' && isPlayable) {
+                      handlePlayMana(card.id);
+                      setMobileInspectorOpen(false);
+                      return;
+                    }
                     selectCardInHand(isSelected ? null : card);
                     setMobileInspectorOpen(false);
                   }}
