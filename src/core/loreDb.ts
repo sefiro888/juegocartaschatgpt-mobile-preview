@@ -367,5 +367,14 @@ export const LORE_DB: Record<string, LoreChapter> = {
     ],
     quote: '«Las runas del templo irradian energía protectora al sabio; somos impenetrables.»',
     artistNote: 'El boceto a carbón de Brutus Clay resalta los pilares rúnicos y los relieves tallados en el templo de piedra helada.'
+  },
+  'devorador-entropico': {
+    title: 'La Boca Abierta Entre las Estrellas',
+    history: [
+      'El Devorador Entrópico nació en la oscuridad que separa los mundos. Su cuerpo está formado por materia quebrada y constelaciones extinguidas, y cada grieta de su armadura contiene el eco de una galaxia consumida.',
+      'En el campo de batalla desciende sobre los obstáculos y resiste los ataques convencionales mientras avanza hacia el Nexo. Los sabios aseguran que destruirlo no lo mata: únicamente dispersa su forma hasta que vuelva a reunir suficiente vacío.'
+    ],
+    quote: '«Cuando su sombra cubra las estrellas, no mires al cielo. Él también estará mirando.»',
+    artistNote: 'La ilustración aportada al Archivo del Nexo combina fantasía cósmica, roca abisal y energía violeta para transmitir una amenaza de escala planetaria.'
   }
 };

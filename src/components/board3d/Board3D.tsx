@@ -503,11 +503,11 @@ const ResponsiveCamera: React.FC = () => {
     const aspect = size.width / size.height;
 
     if (aspect < 0.82) {
-      camera.position.set(0, 24.5, 31);
-      camera.fov = 52;
+      camera.position.set(0, 21, 26.5);
+      camera.fov = 54;
     } else if (aspect < 1.35) {
-      camera.position.set(8.8, 20.5, 28);
-      camera.fov = 47;
+      camera.position.set(7.8, 18.8, 25);
+      camera.fov = 48;
     } else {
       camera.position.set(11.8, 19.2, 23.5);
       camera.fov = 43;
@@ -1014,8 +1014,8 @@ export const Board3D: React.FC = () => {
             zoomSpeed={isCompactRenderer ? 0.85 : 1}
             minPolarAngle={0.72}
             maxPolarAngle={1.05}
-            minDistance={isCompactRenderer ? 22 : 24}
-            maxDistance={isCompactRenderer ? 38 : 36}
+            minDistance={isCompactRenderer ? 19 : 24}
+            maxDistance={isCompactRenderer ? 35 : 36}
           />
         </SanctuaryMaterialsProvider>
       </Canvas>

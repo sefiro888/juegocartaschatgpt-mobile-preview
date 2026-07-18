@@ -2,8 +2,25 @@ import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { CardDOM } from './CardDOM';
 import { CARDS_DB } from '../core/cardsDb';
-import type { BoardEntity } from '../types/card';
-import { Info, Maximize2, Volume2, VolumeX, X } from 'lucide-react';
+import type { BoardEntity, GameState } from '../types/card';
+import {
+  ChevronDown,
+  ChevronUp,
+  Flame,
+  Footprints,
+  Heart,
+  Info,
+  Layers3,
+  Maximize2,
+  Shield,
+  Skull,
+  Snowflake,
+  Sparkles,
+  Swords,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
 import { getObstacleDefinition } from '../core/obstacleConfig';
 import { isBoardObstacle } from '../core/boardPathfinding';
 
@@ -72,10 +89,33 @@ interface GameHUDProps {
   onQuit?: () => void;
 }
 
+type ScreenFeedbackKind = 'attack' | 'damage' | 'heal' | 'freeze' | 'spell' | 'move' | 'summon' | 'defeat';
+
+interface ScreenFeedback {
+  id: string;
+  kind: ScreenFeedbackKind;
+  title: string;
+  detail: string;
+  value?: string;
+}
+
+function getEntityCardName(entity: BoardEntity): string {
+  if (isBoardObstacle(entity)) return getObstacleDefinition(entity.cardId).name;
+  return CARDS_DB[entity.cardId]?.name ?? 'Unidad';
+}
+
+function formatBoardPosition(entity: BoardEntity): string {
+  return `${String.fromCharCode(65 + entity.position.x)}${entity.position.y + 1}`;
+}
+
 export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const [boardRecoveryVersion, setBoardRecoveryVersion] = useState(0);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  const [mobileHandOpen, setMobileHandOpen] = useState(false);
+  const [screenFeedbacks, setScreenFeedbacks] = useState<ScreenFeedback[]>([]);
   const stateRecoveryAttempted = useRef(false);
+  const previousGameStateRef = useRef<GameState | null>(null);
+  const previousEventIdRef = useRef<number | null>(null);
   const {
     gameState,
     selectedCardInHand,
@@ -146,6 +186,123 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [endActiveTurn, inspectedCard, isAIThinking, isPlayerTurn, selectCardInHand, selectEntity, setInspectedCard]);
+
+  useEffect(() => {
+    if (!gameState) {
+      previousGameStateRef.current = null;
+      previousEventIdRef.current = null;
+      return;
+    }
+
+    const previousState = previousGameStateRef.current;
+    const latestEvent = gameEvents.at(-1);
+    const nextFeedbacks: ScreenFeedback[] = [];
+    const feedbackSeed = `${Date.now()}-${gameState.turn}`;
+
+    if (latestEvent && latestEvent.id !== previousEventIdRef.current) {
+      if (latestEvent.tone === 'attack') {
+        nextFeedbacks.push({
+          id: `${feedbackSeed}-attack`,
+          kind: 'attack',
+          title: 'ATAQUE',
+          detail: latestEvent.text,
+        });
+      } else if (latestEvent.tone === 'spell') {
+        nextFeedbacks.push({
+          id: `${feedbackSeed}-spell`,
+          kind: 'spell',
+          title: 'HECHIZO',
+          detail: latestEvent.text,
+        });
+      } else if (latestEvent.tone === 'summon') {
+        nextFeedbacks.push({
+          id: `${feedbackSeed}-summon`,
+          kind: 'summon',
+          title: 'INVOCACION',
+          detail: latestEvent.text,
+        });
+      }
+      previousEventIdRef.current = latestEvent.id;
+    }
+
+    if (previousState) {
+      const previousEntities = new Map(
+        Object.values(previousState.board).map((entity) => [entity.id, entity]),
+      );
+      const currentEntities = new Map(
+        Object.values(gameState.board).map((entity) => [entity.id, entity]),
+      );
+
+      for (const entity of currentEntities.values()) {
+        const previousEntity = previousEntities.get(entity.id);
+        if (!previousEntity) continue;
+
+        if (
+          entity.position.x !== previousEntity.position.x
+          || entity.position.y !== previousEntity.position.y
+        ) {
+          nextFeedbacks.push({
+            id: `${feedbackSeed}-move-${entity.id}`,
+            kind: 'move',
+            title: getEntityCardName(entity),
+            detail: `${formatBoardPosition(previousEntity)}  >  ${formatBoardPosition(entity)}`,
+          });
+        }
+
+        if (entity.health < previousEntity.health) {
+          nextFeedbacks.push({
+            id: `${feedbackSeed}-damage-${entity.id}`,
+            kind: 'damage',
+            title: getEntityCardName(entity),
+            detail: `${entity.health}/${entity.maxHealth} de vida restante`,
+            value: `-${previousEntity.health - entity.health}`,
+          });
+        } else if (entity.health > previousEntity.health) {
+          nextFeedbacks.push({
+            id: `${feedbackSeed}-heal-${entity.id}`,
+            kind: 'heal',
+            title: getEntityCardName(entity),
+            detail: `${entity.health}/${entity.maxHealth} de vida`,
+            value: `+${entity.health - previousEntity.health}`,
+          });
+        }
+
+        if (entity.frozenTurns > previousEntity.frozenTurns) {
+          nextFeedbacks.push({
+            id: `${feedbackSeed}-freeze-${entity.id}`,
+            kind: 'freeze',
+            title: 'CONGELADO',
+            detail: `${getEntityCardName(entity)} pierde su proxima accion`,
+            value: `${entity.frozenTurns}T`,
+          });
+        }
+      }
+
+      for (const entity of previousEntities.values()) {
+        if (currentEntities.has(entity.id)) continue;
+        nextFeedbacks.push({
+          id: `${feedbackSeed}-defeat-${entity.id}`,
+          kind: 'defeat',
+          title: getEntityCardName(entity),
+          detail: isBoardObstacle(entity) ? 'Obstaculo destruido' : 'Unidad derrotada',
+          value: `-${Math.max(1, entity.health)}`,
+        });
+      }
+    }
+
+    previousGameStateRef.current = gameState;
+    if (nextFeedbacks.length > 0) {
+      setScreenFeedbacks((current) => [...current, ...nextFeedbacks].slice(-10));
+    }
+  }, [gameEvents, gameState]);
+
+  useEffect(() => {
+    if (screenFeedbacks.length === 0) return;
+    const timer = window.setTimeout(() => {
+      setScreenFeedbacks((current) => current.slice(1));
+    }, 1650);
+    return () => window.clearTimeout(timer);
+  }, [screenFeedbacks]);
 
   if (!gameState) {
     return (
@@ -254,8 +411,23 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
   const oppFuriaAvail = opponent.manaSources.furia.total - opponent.manaSources.furia.spent;
   const oppArcanoAvail = opponent.manaSources.arcano.total - opponent.manaSources.arcano.spent;
 
+  const activeScreenFeedback = screenFeedbacks[0];
+  const feedbackIcon = activeScreenFeedback?.kind === 'attack'
+    ? <Swords size={24} />
+    : activeScreenFeedback?.kind === 'spell'
+      ? <Sparkles size={24} />
+      : activeScreenFeedback?.kind === 'freeze'
+        ? <Snowflake size={24} />
+        : activeScreenFeedback?.kind === 'move'
+          ? <Footprints size={24} />
+          : activeScreenFeedback?.kind === 'heal'
+            ? <Heart size={24} />
+            : activeScreenFeedback?.kind === 'summon'
+              ? <Shield size={24} />
+              : <Swords size={24} />;
+
   return (
-    <div className="game-hud">
+    <div className={`game-hud ${mobileHandOpen ? 'mobile-hand-open' : 'mobile-hand-closed'}`}>
       {/* ═══ TOP BAR: OPPONENT INFO | TURN/PHASE | OPP MANA ═══ */}
       <div className="hud-top-bar glass-panel">
         <div className="top-section opponent-info-compact">
@@ -310,6 +482,24 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
       {onlineError && (
         <div className="online-sync-error" role="alert">
           {onlineError}
+        </div>
+      )}
+
+      {activeScreenFeedback && (
+        <div
+          key={activeScreenFeedback.id}
+          className={`screen-action-feedback feedback-${activeScreenFeedback.kind}`}
+          role="status"
+          aria-live="assertive"
+        >
+          <div className="screen-action-icon">{feedbackIcon}</div>
+          <div className="screen-action-copy">
+            <strong>{activeScreenFeedback.title}</strong>
+            <span>{activeScreenFeedback.detail}</span>
+          </div>
+          {activeScreenFeedback.value && (
+            <div className="screen-action-value">{activeScreenFeedback.value}</div>
+          )}
         </div>
       )}
 
@@ -595,6 +785,21 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
       {/* ═══ BOTTOM BAR: PLAYER STATS | HAND | MANA ═══ */}
       <div className={`hud-bottom-bar glass-panel ${isAIThinking ? 'ai-thinking-dim' : ''}`}>
+        <button
+          type="button"
+          className="mobile-hand-toggle"
+          onClick={() => {
+            setMobileHandOpen((current) => !current);
+            setMobileInspectorOpen(false);
+          }}
+          aria-expanded={mobileHandOpen}
+          aria-label={mobileHandOpen ? 'Ocultar mano' : 'Mostrar mano'}
+        >
+          {mobileHandOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+          <span>{mobileHandOpen ? 'Ocultar mano' : 'Abrir mano'}</span>
+          <strong>{player.hand.length}</strong>
+        </button>
+
         {/* AI Thinking Overlay */}
         {isAIThinking && (
           <div className="ai-thinking-overlay">
@@ -624,9 +829,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             <span className="hand-stage-title">MANO</span>
             <span className="hand-stage-count">{player.hand.length} CARTAS</span>
             <div className="mobile-player-summary" aria-label="Resumen de recursos">
-              <span className="mobile-health-summary">♥ {playerHealth}/25</span>
-              <span className="mobile-mana-summary arcano-text">❄ {playerArcanoAvail}/{player.manaSources.arcano.total}</span>
-              <span className="mobile-mana-summary furia-text">● {playerFuriaAvail}/{player.manaSources.furia.total}</span>
+              <span className="mobile-health-summary" title="Vida del Nexo"><Heart size={13} /> {playerHealth}/25</span>
+              <span className="mobile-deck-summary" title="Cartas en el mazo"><Layers3 size={13} /> {player.deck.length}</span>
+              <span className="mobile-graveyard-summary" title="Cartas en el cementerio"><Skull size={13} /> {player.graveyard.length}</span>
+              <span className="mobile-mana-summary arcano-text" title="Mana Arcano"><Snowflake size={13} /> {playerArcanoAvail}/{player.manaSources.arcano.total}</span>
+              <span className="mobile-mana-summary furia-text" title="Mana de Furia"><Flame size={13} /> {playerFuriaAvail}/{player.manaSources.furia.total}</span>
             </div>
           </div>
           <div className="player-hand-scroll">
@@ -655,7 +862,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
                   } as React.CSSProperties}
                   onClick={() => {
                     selectCardInHand(isSelected ? null : card);
-                    setMobileInspectorOpen(!isSelected);
+                    setMobileInspectorOpen(false);
                   }}
                   onDoubleClick={() => setInspectedCard(card)}
                   aria-label={`${isSelected ? 'Deseleccionar' : 'Seleccionar'} ${card.name}`}
@@ -734,8 +941,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
               X
             </button>
 
-            <div className="card-inspection-art">
+            <div className="card-inspection-art card-inspection-art-desktop">
               <CardDOM card={inspectedCard} mode="inspected" />
+            </div>
+            <div className="card-inspection-art card-inspection-art-mobile">
+              <CardDOM card={inspectedCard} mode="hand" />
             </div>
 
             <div className="card-inspection-details">
@@ -785,6 +995,95 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           padding: 0;
           gap: 0;
           font-family: var(--font-sans);
+        }
+
+        .screen-action-feedback {
+          position: fixed;
+          z-index: 150;
+          top: 43%;
+          left: 50%;
+          display: grid;
+          grid-template-columns: 46px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 14px;
+          width: min(520px, calc(100vw - 32px));
+          min-height: 92px;
+          padding: 15px 20px;
+          border: 1px solid rgba(184, 224, 242, 0.36);
+          border-radius: 10px;
+          color: #f7fbff;
+          background: linear-gradient(135deg, rgba(6, 16, 27, 0.96), rgba(11, 31, 45, 0.93));
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62), inset 0 1px rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(16px);
+          pointer-events: none;
+          transform: translate(-50%, -50%);
+          animation: screen-feedback-in 1.65s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+        }
+
+        .screen-action-icon {
+          width: 46px;
+          height: 46px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(130, 217, 255, 0.42);
+          border-radius: 50%;
+          color: #a8e9ff;
+          background: rgba(31, 124, 160, 0.22);
+          box-shadow: 0 0 22px rgba(69, 193, 239, 0.2);
+        }
+
+        .screen-action-copy {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          gap: 3px;
+        }
+
+        .screen-action-copy strong {
+          color: #f4fbff;
+          font: 800 1rem var(--font-display);
+          letter-spacing: 0.04em;
+        }
+
+        .screen-action-copy span {
+          overflow: hidden;
+          color: #a9c2cf;
+          font-size: 0.76rem;
+          line-height: 1.35;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .screen-action-value {
+          min-width: 76px;
+          text-align: right;
+          color: #ff8a79;
+          font: 800 2.35rem/1 var(--font-display);
+          text-shadow: 0 0 24px rgba(255, 91, 76, 0.46);
+        }
+
+        .feedback-heal .screen-action-value {
+          color: #74efb8;
+          text-shadow: 0 0 24px rgba(57, 217, 148, 0.42);
+        }
+
+        .feedback-freeze .screen-action-icon,
+        .feedback-freeze .screen-action-value,
+        .feedback-spell .screen-action-icon {
+          color: #7de4ff;
+          border-color: rgba(91, 217, 255, 0.58);
+          text-shadow: 0 0 24px rgba(74, 205, 255, 0.46);
+        }
+
+        .feedback-move .screen-action-value,
+        .feedback-summon .screen-action-value {
+          color: #8ee7c5;
+        }
+
+        @keyframes screen-feedback-in {
+          0% { opacity: 0; transform: translate(-50%, -42%) scale(0.86); filter: blur(8px); }
+          14%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+          100% { opacity: 0; transform: translate(-50%, -58%) scale(1.02); filter: blur(2px); }
         }
 
         /* ═══ TOP BAR ═══ */
@@ -2062,17 +2361,28 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
         }
 
         .mobile-action-rail,
+        .mobile-hand-toggle,
         .mobile-inspector-close,
         .mobile-player-summary {
           display: none;
         }
 
+        .card-inspection-art-mobile {
+          display: none;
+        }
+
         @media (max-width: 1100px) {
           .game-hud {
-            --mobile-hand-height: 220px;
+            --mobile-hand-collapsed-height: 70px;
+            --mobile-hand-open-height: 252px;
+            --mobile-hand-height: var(--mobile-hand-collapsed-height);
             height: 100dvh;
             padding: 0;
             gap: 0;
+          }
+
+          .game-hud.mobile-hand-open {
+            --mobile-hand-height: var(--mobile-hand-open-height);
           }
 
           .hud-top-bar {
@@ -2154,7 +2464,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             left: max(8px, env(safe-area-inset-left));
             width: auto;
             min-width: 0;
-            max-height: min(52dvh, 430px);
+            max-height: min(48dvh, 360px);
             display: none;
             padding: 12px;
             border: 1px solid rgba(176, 222, 242, 0.24);
@@ -2190,13 +2500,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
           .hud-sidebar .inspector-content {
             display: flex;
+            overflow: hidden;
           }
 
           .hud-sidebar .action-log {
-            display: block;
-            flex-basis: 60px;
-            min-height: 60px;
-            max-height: 60px;
+            display: none;
           }
 
           .sidebar-footer-controls {
@@ -2214,6 +2522,55 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             height: 172px;
           }
 
+          .hud-sidebar .sidebar-entity-info,
+          .hud-sidebar .sidebar-card-info {
+            display: grid;
+            grid-template-columns: 120px minmax(0, 1fr);
+            grid-auto-rows: min-content;
+            align-content: start;
+            gap: 7px 12px;
+            width: 100%;
+            min-height: 172px;
+          }
+
+          .hud-sidebar .inspected-card-preview {
+            grid-column: 1;
+            grid-row: 1 / span 8;
+            width: 120px;
+            height: 172px;
+            margin: 0;
+          }
+
+          .hud-sidebar .sidebar-entity-info > :not(.inspected-card-preview),
+          .hud-sidebar .sidebar-card-info > :not(.inspected-card-preview) {
+            grid-column: 2;
+            min-width: 0;
+            margin: 0;
+          }
+
+          .hud-sidebar .stats-grid {
+            gap: 8px;
+          }
+
+          .hud-sidebar .stat-circle {
+            width: 38px;
+            height: 38px;
+          }
+
+          .hud-sidebar .card-specs-mini {
+            justify-content: flex-start;
+          }
+
+          .hud-sidebar .rules-box,
+          .hud-sidebar .rules-desc-sidebar {
+            max-height: 58px;
+            overflow: hidden;
+          }
+
+          .hud-sidebar .lore-box-sidebar {
+            display: none;
+          }
+
           .hud-bottom-bar {
             grid-template-columns: minmax(0, 1fr);
             height: var(--mobile-hand-height);
@@ -2225,6 +2582,44 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
               calc(8px + env(safe-area-inset-bottom))
               max(8px, env(safe-area-inset-left));
             border-radius: 12px 12px 0 0;
+            overflow: visible;
+            transition: height 0.34s cubic-bezier(0.2, 0.8, 0.2, 1),
+                        min-height 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+          }
+
+          .mobile-hand-toggle {
+            position: absolute;
+            z-index: 4;
+            top: -42px;
+            left: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-width: 154px;
+            height: 42px;
+            padding: 0 14px;
+            border: 1px solid rgba(139, 221, 255, 0.34);
+            border-bottom: 0;
+            border-radius: 10px 10px 0 0;
+            color: #dff7ff;
+            background: linear-gradient(180deg, rgba(13, 43, 58, 0.97), rgba(5, 18, 29, 0.97));
+            box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(14px);
+            transform: translateX(-50%);
+            font: 750 0.7rem var(--font-sans);
+          }
+
+          .mobile-hand-toggle strong {
+            min-width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(123, 220, 255, 0.34);
+            border-radius: 50%;
+            color: #fff;
+            background: rgba(53, 160, 201, 0.2);
+            font-size: 0.7rem;
           }
 
           .player-stats-panel,
@@ -2251,7 +2646,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           }
 
           .mobile-player-summary span {
+            display: inline-flex;
             padding: 3px 6px;
+            align-items: center;
+            gap: 3px;
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 5px;
             background: rgba(0, 0, 0, 0.24);
@@ -2270,6 +2668,28 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
             padding: 2px 4px 5px;
             overscroll-behavior-x: contain;
             scroll-snap-type: x proximity;
+            transition: opacity 0.22s ease, transform 0.3s ease;
+          }
+
+          .game-hud.mobile-hand-closed .player-hand-container {
+            justify-content: center;
+            height: 100%;
+            min-height: 0;
+            padding-block: 5px;
+            overflow: hidden;
+          }
+
+          .game-hud.mobile-hand-closed .player-hand-scroll {
+            display: none;
+          }
+
+          .game-hud.mobile-hand-closed .hand-stage-meta {
+            min-height: 42px;
+            padding-bottom: 0;
+          }
+
+          .game-hud.mobile-hand-closed .hand-stage-count {
+            display: none;
           }
 
           .player-hand-scroll .mode-hand {
@@ -2291,7 +2711,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           }
 
           .card-inspection-overlay {
-            align-items: flex-start;
+            align-items: center;
             padding:
               calc(12px + env(safe-area-inset-top))
               12px
@@ -2299,20 +2719,78 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           }
 
           .card-inspection-modal {
-            grid-template-columns: minmax(180px, 230px) minmax(0, 1fr);
-            gap: 20px;
+            grid-template-columns: minmax(132px, 170px) minmax(0, 1fr);
+            gap: 16px;
             width: 100%;
             max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-            padding: 48px 24px 24px;
+            padding: 48px 18px 20px;
+            overflow: auto;
           }
 
-          .card-inspection-art .mode-inspected {
-            width: 220px;
-            height: 316px;
+          .card-inspection-art-desktop {
+            display: none;
+          }
+
+          .card-inspection-art-mobile {
+            display: flex;
+            align-self: start;
+          }
+
+          .card-inspection-art-mobile .mode-hand {
+            width: 154px;
+            height: 220px;
+          }
+
+          .card-inspection-details {
+            padding: 0;
+          }
+
+          .card-inspection-details h2 {
+            margin-top: 5px;
+            font-size: 1.35rem;
+          }
+
+          .card-inspection-stats {
+            gap: 5px;
+            margin: 12px 0 8px;
+          }
+
+          .card-inspection-stats span {
+            padding: 5px 7px;
+            font-size: 0.67rem;
+          }
+
+          .card-inspection-section {
+            padding: 9px 0;
           }
 
           .card-inspection-section p {
-            font-size: 0.84rem;
+            font-size: 0.78rem;
+            line-height: 1.42;
+          }
+
+          .card-inspection-footer {
+            margin-top: 2px;
+            padding-top: 9px;
+          }
+
+          .screen-action-feedback {
+            top: 39%;
+            grid-template-columns: 40px minmax(0, 1fr) auto;
+            gap: 10px;
+            width: min(440px, calc(100vw - 24px));
+            min-height: 82px;
+            padding: 12px 14px;
+          }
+
+          .screen-action-icon {
+            width: 40px;
+            height: 40px;
+          }
+
+          .screen-action-value {
+            min-width: 58px;
+            font-size: 2rem;
           }
 
           .game-over-box {
@@ -2323,7 +2801,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
         @media (max-width: 600px) {
           .game-hud {
-            --mobile-hand-height: 238px;
+            --mobile-hand-collapsed-height: 68px;
+            --mobile-hand-open-height: 254px;
           }
 
           .hud-top-bar {
@@ -2396,22 +2875,51 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
           }
 
           .card-inspection-modal {
-            grid-template-columns: 1fr;
-            gap: 14px;
-            padding: 50px 18px 20px;
+            grid-template-columns: 132px minmax(0, 1fr);
+            gap: 12px;
+            padding: 48px 14px 16px;
           }
 
-          .card-inspection-art .mode-inspected {
-            width: 200px;
-            height: 288px;
+          .card-inspection-art-mobile .mode-hand {
+            width: 132px;
+            height: 189px;
           }
 
-          .card-inspection-details {
-            padding: 0;
+          .card-inspection-details h2 {
+            font-size: 1.12rem;
           }
 
           .card-inspection-stats {
-            margin: 14px 0 8px;
+            margin: 8px 0 5px;
+          }
+
+          .card-inspection-section {
+            padding: 6px 0;
+          }
+
+          .card-inspection-section p {
+            font-size: 0.72rem;
+            line-height: 1.35;
+          }
+
+          .card-inspection-flavor p {
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+          }
+
+          .screen-action-copy strong {
+            font-size: 0.85rem;
+          }
+
+          .screen-action-copy span {
+            font-size: 0.66rem;
+          }
+
+          .screen-action-value {
+            min-width: 48px;
+            font-size: 1.72rem;
           }
 
           .victory-title,
@@ -2422,7 +2930,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({ onQuit }) => {
 
         @media (max-width: 1100px) and (orientation: landscape) {
           .game-hud {
-            --mobile-hand-height: 168px;
+            --mobile-hand-collapsed-height: 58px;
+            --mobile-hand-open-height: 174px;
           }
 
           .mobile-action-rail {
